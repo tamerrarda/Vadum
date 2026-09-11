@@ -29,6 +29,8 @@
     "@solana/sysvars": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@vadum/fixtures": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
