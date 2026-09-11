@@ -1,6 +1,7 @@
 # Phase 0 — De-risk
 
-**Stream 0, task 0.5** (D33). **Runs before spec freeze and before Streams A, B and C.** It does not
+**Stream 0, task 0.5** (D33). **Passed on devnet on 2026-09-11 — `plan/references/phase0-log.md`.** Runs
+before spec freeze and before Streams A, B and C. It does not
 produce the fixtures — `packages/fixtures` does, with no chain (`24-SPEC-fixtures.md`) — and it does not
 gate writing them.
 
@@ -57,7 +58,7 @@ throw on the moved nonce before the chain's own behaviour has been observed.
 | # | Step | Watch for |
 |---|---|---|
 | 1 | Merchant creates the mint, creates the payer's and its own token ATAs, and mints tokens to the payer | — |
-| 2 | Merchant sends the payer enough SOL for two nonce accounts plus fees. **Payer** creates slots 0 and 1: `createAccountWithSeed` (from = base = payer, seed `vadum-<i>`, space `getNonceSize()`, lamports `getMinimumBalanceForRentExemption(getNonceSize())`) + `initializeNonceAccount(authority = payer)` | **D26:** one signer, one signature. Record it |
+| 2 | Merchant sends the payer enough SOL for two nonce accounts, the fee, and the wallet's own rent-exempt minimum — without the last, simulation rejects the setup (D38). **Payer** creates slots 0 and 1: `createAccountWithSeed` (from = base = payer, seed `vadum-<i>`, space `getNonceSize()`, lamports `getMinimumBalanceForRentExemption(getNonceSize())`) + `initializeNonceAccount(authority = payer)` | **D26:** one signer, one signature. Record it |
 | 3 | Payer sweeps any remaining SOL back to the merchant | **ASSERT:** the payer's wallet holds 0 SOL |
 | 4 | Read slot 0 with `fetchNonce()` | The 80-byte layout; the value typed `Address`, converted once to `Nonce` (D34) |
 | 5 | **Cut the network** — the guard throws on any RPC call. Build two canonical messages against slot 0's value: payment 1 for amount A, payment 2 for amount B ≠ A. `version: 0`, `createNoopSigner` for authority and fee payer (D14, D18, D19). The payer signs both | Two different messages, both signed offline |

@@ -160,6 +160,10 @@ must hard-block such mints (`11-RESEARCH-tokens.md` TOK-3).
 
 ## D7 · Never hardcode rent — LOCKED
 
+> **The correction paragraph below is superseded by D39 (2026-09-11).** It was accurate when written;
+> since then the live clusters show SIMD-0437's schedule in effect — mainnet at its first tier, devnet at
+> its second — while the SIMD file still reads `status: Idea`. The decision itself is now load-bearing.
+
 Always `getMinimumBalanceForRentExemption(getNonceSize())`. Live value on 2026-08-27 is
 1,447,680 lamports on both mainnet and devnet.
 
@@ -618,7 +622,8 @@ faucet and there is no clean mitigation** — rate-limiting per identity does no
 are free.
 
 **What replaces it.** Pool setup is a one-time online step in which the payer funds their own rent:
-**0.0072 SOL for N=5, fully refundable** when the pool is closed.
+**5 × one nonce account's rent, fully refundable** when the pool is closed — 0.0072 SOL when this was
+written, about 0.0066 SOL on mainnet on 2026-09-11 (D39), plus the wallet floor at setup (D38).
 
 **The onboarding ceremony collapses, which is a real simplification.** SOL-5b asked whether
 `CreateAccountWithSeed` needs both the funder and the base account to sign when `base != from`. With
@@ -630,7 +635,8 @@ setup screen".
 tutmuyor"* becomes:
 
 > The payer needs no SOL **to pay**. Every transaction fee is paid by the merchant. The payer deposits
-> a one-time, fully refundable rent deposit of 0.0072 SOL when creating their nonce pool, and gets it
+> a one-time, fully refundable rent deposit — about 0.0066 SOL on mainnet in September 2026 — when
+> creating their nonce pool, and gets it
 > back when they close it.
 
 That is still a strong onboarding story and it is the true one. Presenting a sponsored pool as
@@ -932,6 +938,60 @@ full negative set thirty-three.
 
 ---
 
+## D38 · Pool setup leaves the payer's wallet at zero or rent-exempt — LOCKED
+
+Found by Phase 0 on devnet, 2026-09-11. The first run funded the payer with exactly the pool's rent plus
+a fee buffer, so the setup transaction would have left 5,000 lamports in the wallet. Simulation rejected
+it: *"Transaction results in an account (0) with insufficient funds for rent"*. A system account must end
+every transaction holding either zero lamports or at least its rent-exempt minimum; whatever SIMD-0392
+relaxes, it did not relax this case.
+
+`26-SPEC`'s `estimateSetupCost` returned `N × nonce rent` and called it the cost. A payer following it
+fails exactly as the script did, and nothing specified which error to raise.
+
+**The rule.**
+
+- `Pool.estimateSetupCost(size)` returns its three parts, each read at call time (D7): the nonce rent for
+  `size` slots, the setup fee, and the wallet's own rent-exempt minimum
+  (`getMinimumBalanceForRentExemption(0)`).
+- `Pool.create` checks the wallet before sending. It proceeds when the balance is exactly rent + fee (the
+  wallet ends at zero) or at least rent + fee + the wallet minimum; otherwise it throws the new
+  `NONCE_POOL_UNDERFUNDED`, with `detail` carrying the three parts and the shortfall.
+- The onboarding screen (`42-STREAM-C-apps.md` C0) asks for the full total, not the rent alone.
+
+The second run funded the wallet minimum as well, and step 2 passed with one signature (D26).
+
+---
+
+## D39 · Rent is falling on the live clusters; rent figures in the plan are dated, not constants — LOCKED
+
+Found by Stream 0 on 2026-09-11 while diagnosing D38. `getMinimumBalanceForRentExemption(80)`, the rent
+of one nonce account:
+
+| Cluster | 2026-08-27 (SOL-9) | **2026-09-11** | `lamports_per_byte_year` | SIMD-0437 tier |
+|---|---|---|---|---|
+| mainnet-beta | 1,447,680 | **1,317,264** | 6,333 | first |
+| devnet | 1,447,680 | **1,056,640** | 5,080 | second |
+
+Both public endpoints reported `solana-core 4.3.0-rc.0`. The SIMD-0437 file in the repository still
+reads `status: Idea` with no feature key and was last changed on 2026-02-13 — **yet its schedule is
+visibly in effect.**
+
+Two earlier corrections were therefore right about what they measured and wrong about what followed: D7's
+"no tier has activated on any cluster" and `03-VADUMINFO-ERRATA.md` E1 were true on 2026-08-29 and are
+false now. `VadumInfo.md`'s *"ilk kademe aktive edildi"* is true of mainnet today; its *"kabul edildi"*
+still has no source in the SIMD file.
+
+**The rule.**
+
+- D7 stands and is now load-bearing: rent is read at call time, everywhere, never hardcoded.
+- Every rent figure in the plan carries a cluster and a date. The N = 5 pool deposit is quoted as *"about
+  0.0066 SOL on mainnet in September 2026, falling as SIMD-0437's tiers activate"*, not as 0.0072 SOL.
+- Arithmetic written with 0.00144768 SOL — D21's "100 accounts for 0.145 SOL", D26's sponsor faucet — is
+  historical and left as written; none of those conclusions depends on the exact rent.
+
+---
+
 ## Provisional — needs a measurement before locking
 
 | ID | Decision | Confirm by |
@@ -951,11 +1011,14 @@ available.
 
 The three decisions previously listed here — licence, sponsor, npm publishing — were closed by D25,
 D26 and D27. **No design decision blocks spec freeze.** D13 is provisional by nature and blocks only
-filming. What remains is owner action, one piece of writing, and one run, all tracked in
-`02-OPEN-QUESTIONS.md`:
+filming.
+
+**Phase 0 passed on devnet on 2026-09-11** (`plan/references/phase0-log.md`), and OPS-6 is closed. Nothing
+left blocks spec freeze; tagging it (Stream 0 task 0.6) is the owner's call. Still open and non-blocking,
+all tracked in `02-OPEN-QUESTIONS.md`:
 
 | ID | What | Blocks |
 |---|---|---|
-| OPS-6 | A devnet key funded for Phase 0. Node 24 (under nvm) and a local repository were in place on 2026-09-11 | Phase 0 |
 | WIRE-6 | `32-MEASUREMENT-METHOD.md` written | Stream B's B5 and any measurement data — not spec freeze |
-| — | Phase 0 passes on devnet with D35's assertions | G0: spec freeze and Streams A/B/C |
+| OPS-7 | Whether and when the repository goes public | Nothing in the build |
+| NONCE-9 | Releasing an abandoned slot by self-advancing the nonce | Nothing in v1 |

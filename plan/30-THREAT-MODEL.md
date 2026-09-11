@@ -86,8 +86,8 @@ T0 is the primary scenario. The entire double-spend discussion is about T1 and T
 ### T2 · Merchant fee drain — NEW
 
 A payer signs against an underfunded token account. The transaction passes validation, fails at
-execution, **the nonce advances and the merchant pays the fee** (SOL-7). About 5000 lamports each,
-but repeatable.
+execution, **the nonce advances and the merchant pays the fee** (SOL-7). 10,000 lamports for a
+two-signature payment — 5,000 per signature, observed on devnet in Phase 0 — but repeatable.
 
 **Mitigation:** consecutive failed-send counter (`31-PARAMETERS.md`, default 3), and in T0/T1 the
 online merchant can check the payer's balance before handing over goods.
@@ -249,7 +249,7 @@ no clean mitigation, because the payer *must* be the authority for offline advan
 rate-limiting per identity is meaningless when identities are free.
 
 **Removed by scope (D26): there is no sponsor in v1.** The payer funds their own refundable rent
-(0.0072 SOL for N=5). The claim narrows honestly — the payer needs no SOL **to pay**, and makes a
+(about 0.0066 SOL for N=5 on mainnet in September 2026, D39). The claim narrows honestly — the payer needs no SOL **to pay**, and makes a
 one-time refundable deposit to create the pool.
 
 ### T10 · Privacy — the payment QR is a linkable identity

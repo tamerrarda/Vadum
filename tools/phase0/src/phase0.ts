@@ -379,8 +379,13 @@ async function fullRun(merchantKeyPath: string): Promise<void> {
     record('1', 'ok', `test mint created; the payer holds ${MINTED} base units`, funded.signature);
 
     // 2 · the payer funds and creates its own pool of two slots (D26)
+    // A system account must end every transaction at zero or rent-exempt, so the payer receives the
+    // pool's rent, the setup fee, and its own rent-exempt minimum. Step 3 sweeps whatever is left.
     const nonceRent = await rpc.getMinimumBalanceForRentExemption(BigInt(getNonceSize())).send();
-    await sendSetup(merchant, [getTransferSolInstruction({ source: merchant, destination: payer.address, amount: 2n * nonceRent + PAYER_FEE_BUFFER })]);
+    const walletRent = await rpc.getMinimumBalanceForRentExemption(0n).send();
+    await sendSetup(merchant, [
+      getTransferSolInstruction({ source: merchant, destination: payer.address, amount: 2n * nonceRent + PAYER_FEE_BUFFER + walletRent }),
+    ]);
     const slot0 = await deriveNonceAddress(payer.address, 0);
     const slot1 = await deriveNonceAddress(payer.address, 1);
     const slotInstructions = (index: number, address: Address): Instruction[] => [

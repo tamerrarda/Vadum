@@ -84,6 +84,7 @@ these is raised.
 | `NONCE_ALREADY_SPENT` | The pool records this slot as used |
 | `NONCE_LEDGER_MISSING` | The store holds no pool state, or the epoch marker is absent → **RECOVERY** state, offline signing blocked. Raised by `Pool.reserveSlot` (D32) |
 | `NONCE_POOL_EXHAUSTED` | Every slot spent; the payer must reconnect |
+| `NONCE_POOL_UNDERFUNDED` | `Pool.create` found a wallet balance that cannot fund the pool and still end the transaction at zero or rent-exempt. Raised before anything is sent; `detail` carries `nonceRent`, `fee`, `walletMinimum` and `shortfall` (D38) |
 | `NONCE_DESYNC` | On-chain value disagrees with the local record. See the reconciliation rule below — the code without the procedure is what `WIRE-8` was opened for |
 | `NONCE_RETURN_UNTRUSTED` | A `NONCE_RETURN` failed verification: slot not recorded as spent, wrong signer for that slot, a signature that does not cover **this payer and this slot's recorded prior value** (D28 — a genuine return issued to another payer, or from an earlier cycle), or `newNonceValue` unchanged from the value the slot was signed against. Discarded silently in the UI; the slot stays spent. A non-zero `flags` byte fails earlier, in the codec, with `WIRE_FLAG_NOT_ALLOWED_FOR_TYPE` |
 | `NONCE_ACCOUNT_CLOSED` | The nonce account no longer exists on chain. The payer closed the pool (T7) or never created it |

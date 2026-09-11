@@ -18,7 +18,7 @@ on-chain program of its own.
   risk tiers — not eliminated (`plan/30-THREAT-MODEL.md`).
 - **A payer can void queued payments** by advancing their own nonce accounts (T7).
 - **The payer needs no SOL to pay**, but creating a nonce pool takes a one-time, fully refundable
-  deposit of about 0.0072 SOL (D26).
+  deposit — about 0.0066 SOL on mainnet in September 2026, and falling (D26, D39).
 
 ## Repository layout
 

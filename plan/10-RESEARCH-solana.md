@@ -150,7 +150,8 @@ that must be the payer.
 
 With no sponsor, `from == base == payer`: **one signer, one signature, no ceremony.** The onboarding
 step `VadumInfo.md` does not mention shrinks to a single online screen where the payer deposits their
-own refundable rent (0.0072 SOL for N=5). `CreateAccountWithSeedInput.baseAccount` accepts a
+own refundable rent — about 0.0066 SOL for N=5 on mainnet in September 2026 (D39), plus the wallet floor
+at setup (D38). Observed on devnet on 2026-09-11: one signature. `CreateAccountWithSeedInput.baseAccount` accepts a
 `TransactionSigner` precisely for the two-party case, so the capability is there if v2 wants it.
 
 ---
@@ -183,7 +184,8 @@ Two consequences the threat model must absorb:
 1. **Good news.** A merchant who loses a multi-merchant double-spend race pays nothing — the losing
    transaction fails validation and is dropped. Merchants lose goods, never fees, in that scenario.
 2. **Bad news.** A payer who signs against an underfunded token account burns the merchant's fee
-   *and* consumes a nonce. Cheap (~5000 lamports) but repeatable. `31-PARAMETERS.md` needs a
+   *and* consumes a nonce. Cheap — 5,000 lamports per signature, so 10,000 for a payer-and-merchant payment, observed in Phase 0
+   — but repeatable. `31-PARAMETERS.md` needs a
    failed-send counter alongside the queue exposure cap.
 
 Also documented: durable nonce transactions take the fee rate from the *working bank at submission
@@ -264,6 +266,11 @@ getMinimumBalanceForRentExemption(80)
   mainnet-beta : 1,447,680 lamports = 0.00144768 SOL
   devnet       : 1,447,680 lamports = 0.00144768 SOL
 ```
+
+> **Superseded on 2026-09-11 (D39).** The same call now returns **1,317,264** lamports on mainnet-beta
+> (6,333 per byte-year, SIMD-0437's first tier) and **1,056,640** on devnet (5,080, the second tier),
+> while the SIMD file still reads `status: Idea`. The paragraph below was right on 2026-08-27 and is kept
+> as a record; its conclusion that no tier had activated no longer holds.
 
 Matches `VadumInfo.md` §3.2 exactly. It is the pre-reduction value (208 bytes × 6960) because
 **SIMD-0437 has not been accepted**: the proposal reads `status: Idea` with no feature key, so no tier

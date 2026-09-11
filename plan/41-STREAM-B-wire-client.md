@@ -80,7 +80,8 @@ invented nonce under a throwaway payer returns `absent`.
 
 ## B8 · `client/pool.ts` and `client/store.ts`
 
-Payer-funded creation with one signer (D26 — **no sponsor**), `refresh`, `close` with rent refunded to
+Payer-funded creation with one signer (D26 — **no sponsor**) that refuses an underfunded wallet before
+sending (D38), `refresh`, `close` with rent refunded to
 the payer, and slot state as its single owner (D32): `reserveSlot` persists **before** resolving;
 `applyNonceReturn` looks up the slot record and calls `core.verifyNonceReturn`; `reconcile` re-arms
 settled slots, releases abandoned ones past the send window, and keeps pending ones spent. **Never

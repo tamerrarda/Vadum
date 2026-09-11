@@ -12,7 +12,13 @@ wrong but not adversarially checkable · **SCOPE** — a claim the shipped produ
 
 ---
 
-## E1 · SIMD-0437 is not accepted, and no tier has activated — CREDIBILITY
+## E1 · SIMD-0437: the document says Idea, the chain shows its first tier — CREDIBILITY, revised 2026-09-11
+
+> **Revised on 2026-09-11 (D39).** The entry below was accurate on 2026-08-29 and is wrong now. One nonce
+> account's rent is **1,317,264 lamports on mainnet** (`lamports_per_byte_year` 6,333, SIMD-0437's first
+> tier) and 1,056,640 on devnet (5,080, the second tier). The SIMD file still reads `status: Idea`. So
+> §3.2's *"şu an ilk kademedeyiz"* is true of mainnet today, and *"kabul edildi"* is still unsourced.
+> The document's own caution — do not present the finished number as today's — was the right instinct.
 
 **Where:** §3.2 (*"SIMD-0437 kabul edildi… Agave 4.2 mainnet feature aktivasyonu 17 Ağustos 2026
 haftasında başladı… Şu an ilk kademedeyiz"*), §7 leg 5 (*"ilk kademe aktive edildi"*), §14.
@@ -29,8 +35,10 @@ and `getMinimumBalanceForRentExemption(80)` still returns 1,447,680 lamports on 
 devnet. `10-RESEARCH-solana.md` SOL-9 noticed the number had not moved and wrote it off as "not
 observable in the RPC's answer yet"; the correct inference was that the SIMD is not accepted.
 
-**Replace with:** *"Nonce hesabı kirası bugün 0,00144768 SOL. Kabul edilmiş değil ama önerilmiş bir
-beş kademeli plan (SIMD-0437, Idea aşamasında) bunu ~%90 aşağı çekiyor. Bütçemiz bugünkü rakam."*
+**Replace with (revised 2026-09-11):** *"Nonce hesabı kirası 11 Eylül 2026 itibarıyla mainnet'te 0,001317264
+SOL. SIMD-0437'nin beş kademeli planının ilk kademesi zincirde yürürlükte — devnet ikinci kademede —
+ancak öneri dokümanı hâlâ Idea aşamasında görünüyor. Plan tamamlanınca kira ~%90 düşecek. SDK kirayı her
+seferinde zincirden okuyor; hiçbir rakam sabit değil."*
 
 Agave 4.2 shipping the code is not mainnet activation — press coverage conflates the two.
 
@@ -85,7 +93,7 @@ a sponsored nonce pool is a free faucet — `WithdrawNonceAccount` needs only th
 that must be the payer for offline advancing to work at all.
 
 **Replace with:** *"Alıcı ödeme yapmak için SOL'e ihtiyaç duymuyor — bütün işlem ücretlerini satıcı
-ödüyor. Havuzu kurarken bir kereliğine, tamamen geri alınabilir 0,0072 SOL kira yatırıyor ve havuzu
+ödüyor. Havuzu kurarken bir kereliğine, tamamen geri alınabilir küçük bir kira depozitosu (Eylül 2026'da mainnet'te ~0,0066 SOL) yatırıyor ve havuzu
 kapattığında geri alıyor."*
 
 Still a strong onboarding story, and one the SDK can actually keep.
@@ -208,7 +216,7 @@ Both reviews checked these independently and they hold. Listed so nobody spends 
 
 | Claim | Status |
 |---|---|
-| §3.2 nonce account is 80 bytes, rent ~0.00145 SOL | ✅ Exact, live RPC both clusters |
+| §3.2 nonce account is 80 bytes | ✅ Exact. The rent figure (~0.00145 SOL) was exact on 2026-08-27 and has since fallen — see E1 |
 | §3.3's instruction order, and `AdvanceNonce` having to be first | ✅ Enforced by kit, not by our discipline |
 | §3.5's honesty about the fresh-blockhash path not needing a nonce | ✅ Correct, and the qualifier it adds is one `30-THREAT-MODEL.md` had dropped |
 | §5.1's *"protokolün garantisi en fazla biri düşer"* | ✅ Correct, and the fee semantics behind it are confirmed by Agave source |

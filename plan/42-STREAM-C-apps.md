@@ -17,7 +17,9 @@ Vite + TypeScript PWAs (D2). **Branch from the commit where Stream A's A0 stubs 
 One online screen: show `Pool.estimateSetupCost(5)` as a refundable deposit, create the pool with the
 payer's own key, show the result. **There is no sponsor** (D26), and the copy says exactly what D26
 says: the payer needs no SOL *to pay*; creating the pool takes a one-time, fully refundable deposit of
-about 0.0072 SOL, returned when the pool is closed. A close-pool action that refunds the rent lives in
+the nonce rent — about 0.0066 SOL on mainnet in September 2026, read live and never hardcoded (D39) —
+returned when the pool is closed. The amount the screen asks for is the full `estimateSetupCost` total,
+setup fee and wallet floor included, not the rent alone (D38). A close-pool action that refunds the rent lives in
 settings.
 
 **Done when:** on devnet a fresh payer funds, creates a pool of five, and closes it with the rent back.

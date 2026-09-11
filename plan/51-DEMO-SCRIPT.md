@@ -10,8 +10,8 @@ surprises. iOS is proven separately in the measurement report.
 
 ## Setup, done before filming
 
-- The payer, online, has created their own nonce pool (D26), so a refundable deposit of about 0.0072
-  SOL sits in the nonce accounts. Any SOL left in the payer's wallet afterwards is swept out, so the
+- The payer, online, has created their own nonce pool (D26), so a refundable rent deposit sits in the
+  nonce accounts; the amount is read live from devnet, never quoted from the plan (D39). Any SOL left in the payer's wallet afterwards is swept out, so the
   wallet shows **zero SOL** on camera. The payer holds some tokens of the test mint (D24).
 - The merchant's ATA exists, or the intent sets `INCLUDE_CREATE_ATA`.
 - The merchant app is set to **T2** — both radios are off, so the merchant can neither pre-check nor

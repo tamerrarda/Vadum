@@ -78,7 +78,7 @@ the current framing: the risk discussion is entirely about T1 and T2, which are 
 | **T2 per-receipt cap** | **5** | `5_000_000` | Street-vendor ticket size. Exposure may last hours, and no pre-check is possible |
 | **T2 merchant queue exposure cap** | **50** | `50_000_000` | Merchant stops accepting offline above this until the queue drains |
 | **T2 failed-send counter** | **3** consecutive → stop accepting | — | Fires on `SUBMIT_EXECUTION_FAILED` **and** `SUBMIT_NONCE_ABSENT` (D21). Never on `SUBMIT_NONCE_STALE`, which is an honest race |
-| **Nonce pool size N** | **5** | — | Five payments is a plausible offline stretch, and the rent is 5 × 0.00144768 = **0.0072 SOL**, refundable. **Not a security parameter** — see below |
+| **Nonce pool size N** | **5** | — | Five payments is a plausible offline stretch, and the rent is 5 × one nonce account's rent, refundable — **about 0.0066 SOL on mainnet in September 2026** and falling (D39), plus the wallet floor at setup (D38). **Not a security parameter** — see below |
 | **Send window (product TTL)** | **24 h** | — | Merchant must submit or void within this; it also gates the payer's `NONCE_DESYNC` reconciliation. Honest caveat below |
 | **Mint compatibility cache TTL** | **24 h**, mutable mints only | — | D22: an immutable mint such as USDC never goes stale. For USDG/PYUSD the TTL **warns and caps**, it does not hard-block |
 | **Payer confirmation threshold** | **10** | `10_000_000` | Above this the payer app requires device biometric before signing |

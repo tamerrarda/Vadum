@@ -18,8 +18,10 @@ import type { Address, Nonce, RawMintData } from '@vadum/core';
 export interface VadumRpc {
   readonly endpoint: string;
   readonly cluster: 'devnet' | 'mainnet-beta' | 'testnet' | 'localnet';
-  /** Never hardcode rent (D7). */
+  /** Never hardcode rent (D7) — it is falling on the live clusters (D39). */
   getNonceRentExemption(): Promise<bigint>;
+  /** getMinimumBalanceForRentExemption(dataLength). `0` gives a plain wallet's rent-exempt floor (D38). */
+  getRentExemption(dataLength: number): Promise<bigint>;
   getMintAccount(mint: Address): Promise<RawMintFetch>;
   getNonceAccount(address: Address): Promise<NonceAccountState>;
   getTokenBalance(ata: Address): Promise<bigint | null>;
@@ -140,7 +142,9 @@ import type { NonceReturnPayload } from '@vadum/wire';
 export interface PoolSlot {
   readonly index: number;
   readonly address: Address;
-  readonly value: Nonce | null;        // null when not yet read
+  /** null when not yet read. NOT unique across slots: slots initialised in one transaction share it
+   *  (Phase 0, 2026-09-11), so slot state is keyed on `index`, never on the value. */
+  readonly value: Nonce | null;
   readonly state: 'unspent' | 'spent' | 'unknown';
   /** Set when state === 'spent'. Needed by applyNonceReturn (21-SPEC rule 12, D28) and by
    *  the NONCE_DESYNC reconciliation (23-SPEC). */
@@ -157,10 +161,22 @@ export interface PoolStatus {
 }
 
 export interface Pool {
-  /** Cost estimate before the payer commits: N * getNonceRentExemption(). Refundable. */
-  estimateSetupCost(size: number): Promise<bigint>;
+  /**
+   * What the payer's wallet needs before `create` (D38), each part read at call time (D7):
+   *   nonceRent      size × getNonceRentExemption() — refundable when the pool closes
+   *   fee            the setup transaction's fee
+   *   walletMinimum  getRentExemption(0) — a system account must end every transaction at zero
+   *                  or rent-exempt
+   * The wallet must hold exactly nonceRent + fee, ending at zero, or at least all three together.
+   */
+  estimateSetupCost(size: number): Promise<{
+    readonly nonceRent: bigint;
+    readonly fee: bigint;
+    readonly walletMinimum: bigint;
+  }>;
   /** Online. createAccountWithSeed + initializeNonceAccount for each slot. One signer; the payer
-   *  pays the fee and the rent (D26). */
+   *  pays the fee and the rent (D26). Checks the wallet first and throws NONCE_POOL_UNDERFUNDED,
+   *  sending nothing, if it cannot end the transaction at zero or rent-exempt (D38). */
   create(size: number, payerKey: CryptoKeyPair): Promise<PoolStatus>;
   /**
    * Offline. Picks the lowest-index slot that is 'unspent' with a known value, marks it spent
