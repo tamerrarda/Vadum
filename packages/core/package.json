@@ -1,0 +1,34 @@
+{
+  "name": "@vadum/core",
+  "version": "0.0.0",
+  "description": "Canonical message builder, validation and offline verification for Vadum offline payments",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tamerrarda/Vadum.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@solana-program/system": "catalog:",
+    "@solana-program/token": "catalog:",
+    "@solana-program/token-2022": "catalog:",
+    "@solana/kit": "catalog:",
+    "@solana/sysvars": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,1214 @@
+{
+  "_warning": "DEVNET TEST KEYS. Zero value. Never reuse.",
+  "generator": "packages/fixtures/src/generate.ts",
+  "packages": {
+    "@solana/kit": "8.0.0",
+    "@solana-program/system": "0.14.0",
+    "@solana-program/token": "0.16.0",
+    "@solana-program/token-2022": "0.16.0",
+    "qrcode": "1.5.4"
+  },
+  "mints": {
+    "spl": {
+      "address": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+      "description": "Throwaway test mint: legacy SPL Token, 6 decimals, no extensions (D24). Not USDC."
+    },
+    "t22": {
+      "address": "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe",
+      "description": "Throwaway test mint: Token-2022, null transfer hook, zero transfer fee. Not USDG or PYUSD."
+    }
+  },
+  "mintRecords": [
+    {
+      "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+      "tokenProgram": "spl-token",
+      "decimals": 6,
+      "compatible": true,
+      "blockers": [],
+      "warnings": [],
+      "mutable": false,
+      "checkedAt": 0
+    },
+    {
+      "mint": "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe",
+      "tokenProgram": "token-2022",
+      "decimals": 6,
+      "compatible": true,
+      "blockers": [],
+      "warnings": [],
+      "mutable": false,
+      "checkedAt": 0
+    }
+  ],
+  "cases": [
+    {
+      "name": "nonce-dynamic-spl-no-ata",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": null,
+        "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "JAYwnTWS9z44Bv3N3otEHihbKfMLzTwwskqhWc9n5qii",
+        "destinationAta": "13KoHDCDXebtaN59JpGpQCmhsk8u7qk9H9FFSCMyynLh"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgygJSYAAAAAAAYA",
+        "messageByteLength": 354,
+        "wireFlags": 0,
+        "wireIntent": "AQEAgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABg==",
+        "wireIntentBase45": "W50*20-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPA$I8B9D2PDNQR6PQKTZ67SEBXCC8CB0H7XSCI%6NJORR2A4HOMQFV4000000600",
+        "wireAuth": "AQMAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgM",
+        "wireAuthBase45": "Y50330XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52YOBACM+849EHS5CIPI0KQWBKZIA6$OCMOGTEIFJ./B5*NHQU%Z9U*316H5SKV%B0FMG%LEVUTWQN$DX6IY2R.31KJEENO/8H",
+        "wireAuthBase45Length": 198,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 7
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 483
+      }
+    },
+    {
+      "name": "nonce-dynamic-spl-with-ata",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": true,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": null,
+        "signature": "BRPeHHwvVF3sgXMaa5gox1PW3gP05AK2LzNu7ZUEcDm54AuzhrF26MgYua3jygZt57DrIHlNSKsspeLkmhiNDA=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "JAYwnTWS9z44Bv3N3otEHihbKfMLzTwwskqhWc9n5qii",
+        "destinationAta": "13KoHDCDXebtaN59JpGpQCmhsk8u7qk9H9FFSCMyynLh"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBQqBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACMlyWPTiSJ8bs9ECkUjg2DC1oTmdr/EIQEjnvY2+n4We1JKMYo0cLG6ukDOJBZlWEpWSc6XGP5NjbBRhSshzfRBqfVFxksVo7gioRfc9KXiM8DXDFFshqzRNgGLqlAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqR2gwO8OfsnVjS8LtIY3hZGxry5Z4NuhETv7xvvlxhDfAwUDAwgBBAQAAAAGBgACAAcFCQEBCQQEBwIBCgygJSYAAAAAAAYA",
+        "messageByteLength": 396,
+        "wireFlags": 2,
+        "wireIntent": "AQECgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABg==",
+        "wireIntentBase45": "W50BE0-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPA$I8B9D2PDNQR6PQKTZ67SEBXCC8CB0H7XSCI%6NJORR2A4HOMQFV4000000600",
+        "wireAuth": "AQMCiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN8FE94cfC9UXeyBcxprmCjHU9beA/TkArYvM27tlQRwObngC7OGsXboyBi5rePKBm3nsOsgeU1Iqyyl4uSaGI0M",
+        "wireAuthBase45": "Y50KE0XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52*S0P3SLVF.TAK+T OE4RD:65.QA03S7/UJF0N/521EX$IJ8EJMNPL1B1HK1FEDPDLN*ZSP 02DTRWT3FFI89:S5YUSSLJI$H",
+        "wireAuthBase45Length": 198,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 7
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 525
+      }
+    },
+    {
+      "name": "nonce-static-spl",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": null,
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": true
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000",
+        "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+      },
+      "expectedAmount": "2500000",
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "JAYwnTWS9z44Bv3N3otEHihbKfMLzTwwskqhWc9n5qii",
+        "destinationAta": "13KoHDCDXebtaN59JpGpQCmhsk8u7qk9H9FFSCMyynLh"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgygJSYAAAAAAAYA",
+        "messageByteLength": 354,
+        "wireFlags": 16,
+        "wireIntent": "AQIQgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30QY=",
+        "wireIntentBase45": "X50+32-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPA$I8B9D2PDNQR6PQKTZ67SEBXCC8CB0H7XSCI%6NJORR2A4H5JQ",
+        "wireAuth": "AQMQiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN+gJSYAAAAAAFtdsCwhNIj4X+mS2dEuoENSZ8RfwcJz55kAXry8z/HxTX4etIeIoyVd0LCprNvyz9NnbW2PkdYPCJpyKcHxiAw=",
+        "wireAuthBase45": "Y50442XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:522BK8 4000000YOBACM+849EHS5CIPI0KQWBKZIA6$OCMOGTEIFJ./B5*NHQU%Z9U*316H5SKV%B0FMG%LEVUTWQN$DX6IY2R.31KJEENO/8H",
+        "wireAuthBase45Length": 210,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 6
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 483
+      }
+    },
+    {
+      "name": "nonce-dynamic-t22-no-ata",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "token-2022",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": null,
+        "signature": "FIdGZKavPKvmelJTpvze8whBMJW8usJ+egYzTtpK/Yn9SrZij2qDWpQ6cT9tiKhgzo53dPGLXz6+weJrriZtDw=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "2sWGXSMQDtjGUGiRCan7DPZrKEGSnDNSkRc7tvE42z55",
+        "destinationAta": "GLjrePbHS1wa4YvWJwA8FcUifiUZUCDVBYgAo3TRA8go"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cG8vSCEFnxutdG2scsKWoLuaa2M84p0PnQGr+cA2SRyiGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkOPty/BWm+KFxXKV44xmgH6L15rjo/nm6BRRs/7WU/aoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABuehzdKbC3j9E69MVZj+/07yqXFm48pvLk+/zNgFBb8Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324e51j94YQl285GzN2rYa/E2DuQ0n/r35KNihi/wdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQCBgQBCgygJSYAAAAAAAYA",
+        "messageByteLength": 354,
+        "wireFlags": 4,
+        "wireIntent": "AQEEgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5RuehzdKbC3j9E69MVZj+/07yqXFm48pvLk+/zNgFBb8aAlJgAAAAAABg==",
+        "wireIntentBase45": "W50SP0-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPIYIUJF7/REFM78IHK7V.O$8II/UDH5R$21U7ZVUN%V3:P67AQOUFV4000000600",
+        "wireAuth": "AQMEiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN8Uh0Zkpq88q+Z6UlOm/N7zCEEwlby6wn56BjNO2kr9if1KtmKPaoNalDpxP22IqGDOjnd08YtfPr7B4muuJm0P",
+        "wireAuthBase45": "Y50$P0XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52ZQ2K+8B3L6U776TFIA/4LF8S/11H66T%NKQO8JF*L6$QRF2W.0WP2N*5IBRGBXIBEE5%D*CL35QP4F5OU$1C85O3SSW0MJZD",
+        "wireAuthBase45Length": 198,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 7
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 483
+      }
+    },
+    {
+      "name": "nonce-dynamic-t22-with-ata",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": true,
+          "tokenProgram": "token-2022",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": null,
+        "signature": "M1K1WCxGWF1ABvbcbHV837X0H21hiw9AiNlVJn4MToEGv0p5MX4uVSOupcPi9YZ3oDWLNUQP7jZgHp68Z1INDQ=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "2sWGXSMQDtjGUGiRCan7DPZrKEGSnDNSkRc7tvE42z55",
+        "destinationAta": "GLjrePbHS1wa4YvWJwA8FcUifiUZUCDVBYgAo3TRA8go"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBQqBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cG8vSCEFnxutdG2scsKWoLuaa2M84p0PnQGr+cA2SRyiGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkOPty/BWm+KFxXKV44xmgH6L15rjo/nm6BRRs/7WU/aoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABuehzdKbC3j9E69MVZj+/07yqXFm48pvLk+/zNgFBb8YyXJY9OJInxuz0QKRSODYMLWhOZ2v8QhASOe9jb6fhZBqfVFxksVo7gioRfc9KXiM8DXDFFshqzRNgGLqlAAAAG3fbh7nWP3hhCXbzkbM3athr8TYO5DSf+vfko2KGL/B2gwO8OfsnVjS8LtIY3hZGxry5Z4NuhETv7xvvlxhDfAwUDAwgBBAQAAAAHBgAEAAYFCQEBCQQCBgQBCgygJSYAAAAAAAYA",
+        "messageByteLength": 396,
+        "wireFlags": 6,
+        "wireIntent": "AQEGgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5RuehzdKbC3j9E69MVZj+/07yqXFm48pvLk+/zNgFBb8aAlJgAAAAAABg==",
+        "wireIntentBase45": "W500$0-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPIYIUJF7/REFM78IHK7V.O$8II/UDH5R$21U7ZVUN%V3:P67AQOUFV4000000600",
+        "wireAuth": "AQMGiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN8zUrVYLEZYXUAG9txsdXzftfQfbWGLD0CI2VUmfgxOgQa/Snkxfi5VI66lw+L1hnegNYs1RA/uNmAenrxnUg0N",
+        "wireAuthBase45": "Y509$0XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52/L6T-M*Q5V7BA48G9V0WDHZF50NZ/3-ECY-1NDHIYA3.FR-9H%0UI9PB6Q%5:M40/K6VS/:GIBK.QH8R875U 6C13KZ2DBT1",
+        "wireAuthBase45Length": 198,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 7
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 525
+      }
+    },
+    {
+      "name": "fresh-dynamic-spl-no-ata",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "fresh",
+            "blockhash": "FkTqdP8BNfPGtH1NXMfnk2VHxu4PTWDkZ1ASoeHyNcwk",
+            "lastValidBlockHeight": "0"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": null,
+        "amount": "2500000"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": null,
+        "amount": null,
+        "signature": "dfeA4grUkrgqB5Bqgu2M/uGwfaq8ErhTi+B4natQsKArpM1zLzKH2FwGDIW5l0qx+eGYB/JYJtIWQoSVwocWBA=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": null,
+        "sourceAta": "JAYwnTWS9z44Bv3N3otEHihbKfMLzTwwskqhWc9n5qii",
+        "destinationAta": "13KoHDCDXebtaN59JpGpQCmhsk8u7qk9H9FFSCMyynLh"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBAgaBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cr/CQZcNC6jJbaUyn5eF3S4ibWamhwBD0hCXYwbcYCQ4+1JKMYo0cLG6ukDOJBZlWEpWSc6XGP5NjbBRhSshzfRBt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKnbJfAjIeQvOAvFRkmebmDyuLoUkDrSOHLi/Un60iQwWwEFBAMEAgEKDKAlJgAAAAAABgA=",
+        "messageByteLength": 248,
+        "wireFlags": 1,
+        "wireIntent": "AQEBgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABtsl8CMh5C84C8VGSZ5uYPK4uhSQOtI4cuL9SfrSJDBb",
+        "wireIntentBase45": "W50P80-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPA$I8B9D2PDNQR6PQKTZ67SEBXCC8CB0H7XSCI%6NJORR2A4HOMQFV4000000600VVR5GU C4S/5/L1%*8D1KNBC+FN:Q2SJ7567EVS%F9LPQ456",
+        "wireAuth": "AQMBiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1x194DiCtSSuCoHkGqC7Yz+4bB9qrwSuFOL4Hidq1CwoCukzXMvMofYXAYMhbmXSrH54ZgH8lgm0hZChJXChxYE",
+        "wireAuthBase45": "Y50Y80XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1:UB0DV-PSD*QVCN1/0-KDH1U:9W1EMDQLMG2CPA:GS/-J19A8BKO$KCPEKH6%FRIY0X+GU5JLMMHNS901L6B7PQII8/-IM3H40",
+        "wireAuthBase45Length": 149,
+        "qrVersions": {
+          "intent": {
+            "M": 7,
+            "Q": 9
+          },
+          "auth": {
+            "M": 6,
+            "Q": 8
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 377
+      }
+    },
+    {
+      "name": "base45-double-space",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": "2500029",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": "2500029"
+      },
+      "auth": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceRef": {
+          "index": 0,
+          "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        },
+        "amount": null,
+        "signature": "EKaYIvvEmgdAQOA9lJHr9uYHld6OiOLlGtpvIeHlRcAID+5NTL1D6Pd5aGZnomHCAnkI+xks/AnGZPduX5cpCg=="
+      },
+      "expectedAmount": null,
+      "derived": {
+        "nonceAddress": "A4v6BU8ViZz6b3QMTZXrp31XzRzRWUNtjXP7Sjiq7W55",
+        "sourceAta": "JAYwnTWS9z44Bv3N3otEHihbKfMLzTwwskqhWc9n5qii",
+        "destinationAta": "13KoHDCDXebtaN59JpGpQCmhsk8u7qk9H9FFSCMyynLh"
+      },
+      "expected": {
+        "messageVersion": 0,
+        "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgy9JSYAAAAAAAYA",
+        "messageByteLength": 354,
+        "wireFlags": 0,
+        "wireIntent": "AQEAgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30b0lJgAAAAAABg==",
+        "wireIntentBase45": "W50*20-B7H%1S FG2C7TKR:C7U92+P9+H+II85UUNK 4V*PBKMPA$I8B9D2PDNQR6PQKTZ67SEBXCC8CB0H7XSCI%6NJORR2A4H8NQFV4000000600",
+        "wireAuth": "AQMAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN8Qppgi+8SaB0BA4D2Ukev25geV3o6I4uUa2m8h4eVFwAgP7k1MvUPo93loZmeiYcICeQj7GSz8CcZk925flykK",
+        "wireAuthBase45": "Y50330XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52W42LAJC$VBLJN58UFS8ZIG$TR3TQ.I%0IZUSYH392E4PS  8%01U5UPV9EQ8%CV-8DP4D6GC3E0461983 %VS3PRCV 3CL85",
+        "wireAuthBase45Length": 198,
+        "qrVersions": {
+          "intent": {
+            "M": 5,
+            "Q": 7
+          },
+          "auth": {
+            "M": 8,
+            "Q": 10
+          }
+        },
+        "signatureValid": true,
+        "fullTransactionLength": 483
+      }
+    }
+  ],
+  "nonceReturn": [
+    {
+      "name": "nonce-return-signed",
+      "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+      "statement": {
+        "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+        "nonceIndex": 0,
+        "spentAgainstValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee",
+        "newNonceValue": "4EUcifGtcxuNK2pVZCHjjGb6GEGW2WzQRsXcTpLfrx7Y"
+      },
+      "expected": {
+        "signingBytes": "dmFkdW06bm9uY2UtcmV0dXJuOnYxiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN8wBtYsm9XwjnDNZL5O2TSJSYSy4SADwtF6atj+2tOe3w==",
+        "wireNonceReturn": "AQQAADAG1iyb1fCOcM1kvk7ZNIlJhLLhIAPC0Xpq2P7a057fhNMsKnSeRqY2B9jlGFGUoOYBRQyWDXsn3KGzm8/swjKbkL1p0idm+mBQXVAEmd23ppj77GICEENR1SC83u2hBA==",
+        "wireNonceReturnBase45": "Z50000936I3RNVJMIUWBE5XCP/9*S6AD9SRM524DSOILFKJR*TR 3KSZGBQ5JXE--8G$6+IRF33NZIL3T W8S/IRPF6+RYVM%CQYOO:TJO.NOPQ$0D-7C%ZB7Q0E1SX2L7%VPHCN22OFAA6498S0GK",
+        "qrVersions": {
+          "M": 6,
+          "Q": 8
+        },
+        "signatureValid": true
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "bad-version",
+      "target": "wire.decodeAuth",
+      "input": {
+        "bytes": "AgMAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgM"
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_VERSION_UNSUPPORTED",
+      "note": "the nonce-dynamic-spl-no-ata AUTH with version byte 0x02"
+    },
+    {
+      "name": "bad-unknown-type",
+      "target": "wire.peekPayloadType",
+      "input": {
+        "bytes": "AQUAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgM"
+      },
+      "expectedError": "WIRE_UNKNOWN_TYPE",
+      "note": "the nonce-dynamic-spl-no-ata AUTH with type byte 0x05"
+    },
+    {
+      "name": "bad-unexpected-type",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQQAADAG1iyb1fCOcM1kvk7ZNIlJhLLhIAPC0Xpq2P7a057fhNMsKnSeRqY2B9jlGFGUoOYBRQyWDXsn3KGzm8/swjKbkL1p0idm+mBQXVAEmd23ppj77GICEENR1SC83u2hBA=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_UNEXPECTED_TYPE",
+      "expectedDetail": {
+        "expected": "INTENT",
+        "actual": "NONCE_RETURN"
+      },
+      "note": "the nonce-return-signed payload handed to the INTENT decoder"
+    },
+    {
+      "name": "bad-reserved-flag",
+      "target": "wire.decodeAuth",
+      "input": {
+        "bytes": "AQMgiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgM"
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_RESERVED_FLAG_SET",
+      "note": "AUTH flags 0x20 (bit 5)"
+    },
+    {
+      "name": "bad-fee-payer-separate-set",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQEIgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABg=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_FEE_PAYER_SEPARATE_UNSUPPORTED",
+      "note": "INTENT flags 0x08 (bit 3)"
+    },
+    {
+      "name": "bad-static-fee-payer-separate",
+      "target": "wire.decodeStaticIntent",
+      "input": {
+        "bytes": "AQIYgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30QY="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_FEE_PAYER_SEPARATE_UNSUPPORTED",
+      "note": "STATIC_INTENT flags 0x18 (bits 3 and 4); check-order step 6 precedes step 7 (D30)"
+    },
+    {
+      "name": "bad-intent-amount-in-auth",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQEQgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABg=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_FLAG_NOT_ALLOWED_FOR_TYPE",
+      "expectedDetail": {
+        "type": "INTENT",
+        "flag": "AMOUNT_IN_AUTH"
+      },
+      "note": "dynamic INTENT flags 0x10 (AMOUNT_IN_AUTH)"
+    },
+    {
+      "name": "bad-nonce-return-flags",
+      "target": "wire.decodeNonceReturn",
+      "input": {
+        "bytes": "AQQBADAG1iyb1fCOcM1kvk7ZNIlJhLLhIAPC0Xpq2P7a057fhNMsKnSeRqY2B9jlGFGUoOYBRQyWDXsn3KGzm8/swjKbkL1p0idm+mBQXVAEmd23ppj77GICEENR1SC83u2hBA=="
+      },
+      "expectedError": "WIRE_FLAG_NOT_ALLOWED_FOR_TYPE",
+      "expectedDetail": {
+        "type": "NONCE_RETURN",
+        "flag": "LIFETIME_FRESH"
+      },
+      "note": "NONCE_RETURN flags 0x01 (bit 0)"
+    },
+    {
+      "name": "bad-static-fresh",
+      "target": "wire.decodeStaticIntent",
+      "input": {
+        "bytes": "AQIRgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30QY="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_STATIC_CONSTRAINT",
+      "note": "STATIC_INTENT flags 0x11 (LIFETIME_FRESH together with AMOUNT_IN_AUTH)"
+    },
+    {
+      "name": "bad-static-no-amount-flag",
+      "target": "wire.decodeStaticIntent",
+      "input": {
+        "bytes": "AQIAgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30QY="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "WIRE_STATIC_CONSTRAINT",
+      "note": "STATIC_INTENT flags 0x00 (AMOUNT_IN_AUTH clear)"
+    },
+    {
+      "name": "bad-length-short",
+      "target": "wire.decodeAuth",
+      "input": {
+        "bytes": "AQMAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8Yg="
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_LENGTH_MISMATCH",
+      "note": "the 132-byte AUTH minus its last byte"
+    },
+    {
+      "name": "bad-length-trailing",
+      "target": "wire.decodeAuth",
+      "input": {
+        "bytes": "AQMAiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgMAA=="
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_LENGTH_MISMATCH",
+      "note": "the 132-byte AUTH plus one zero byte"
+    },
+    {
+      "name": "bad-auth-flags-mismatch",
+      "target": "wire.decodeAuth",
+      "input": {
+        "bytes": "AQMCiojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1wAHaDA7w5+ydWNLwu0hjeFkbGvLlng26ERO/vG++XGEN9bXbAsITSI+F/pktnRLqBDUmfEX8HCc+eZAF68vM/x8U1+HrSHiKMlXdCwqazb8s/TZ21tj5HWDwiacinB8YgM"
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_FLAGS_MISMATCH",
+      "note": "AUTH flags 0x02 answering an intent with flags 0x00; the length is unaffected"
+    },
+    {
+      "name": "bad-mint-unknown",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQEAgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TKk6wXBRhwcdZ7g8f/Dv6BCOjsRTBXXXcmh5Mz29q+fKAlJgAAAAAABg=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "MINT_UNKNOWN",
+      "note": "an INTENT whose mint is the PAYER2 address, which is absent from mintRecords"
+    },
+    {
+      "name": "bad-decimals-mismatch",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQEAgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAACQ=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "MINT_DECIMALS_MISMATCH",
+      "note": "INTENT decimals 9 for a mint cached with 6"
+    },
+    {
+      "name": "bad-token-program-mismatch",
+      "target": "wire.decodeIntent",
+      "input": {
+        "bytes": "AQEEgTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5TtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30aAlJgAAAAAABg=="
+      },
+      "context": {
+        "mintCache": [
+          "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe"
+        ]
+      },
+      "expectedError": "MINT_TOKEN_PROGRAM_MISMATCH",
+      "note": "the legacy SPL Token test mint with the TOKEN_2022 flag set (D30)"
+    },
+    {
+      "name": "bad-base45-out-of-alphabet",
+      "target": "wire.fromBase45",
+      "input": {
+        "base45": "y50330XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52YOBACM+849EHS5CIPI0KQWBKZIA6$OCMOGTEIFJ./B5*NHQU%Z9U*316H5SKV%B0FMG%LEVUTWQN$DX6IY2R.31KJEENO/8H"
+      },
+      "expectedError": "WIRE_BASE45_INVALID",
+      "note": "the nonce-dynamic-spl-no-ata AUTH string with its first character lowercased"
+    },
+    {
+      "name": "bad-base45-bad-length",
+      "target": "wire.fromBase45",
+      "input": {
+        "base45": "Y50330XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52YOBACM+849EHS5CIPI0KQWBKZIA6$OCMOGTEIFJ./B5*NHQU%Z9U*316H5SKV%B0FMG%LEVUTWQN$DX6IY2R.31KJEENO/8H0"
+      },
+      "expectedError": "WIRE_BASE45_INVALID",
+      "note": "the same string plus one character: length 199, and 199 % 3 == 1"
+    },
+    {
+      "name": "bad-base45-group-overflow",
+      "target": "wire.fromBase45",
+      "input": {
+        "base45": ":::"
+      },
+      "expectedError": "WIRE_BASE45_INVALID",
+      "note": "one 3-character group decoding to 91,124, above 0xFFFF"
+    },
+    {
+      "name": "bad-base45-tail-overflow",
+      "target": "wire.fromBase45",
+      "input": {
+        "base45": "000::"
+      },
+      "expectedError": "WIRE_BASE45_INVALID",
+      "note": "a valid group followed by a 2-character tail decoding to 2,024, above 0xFF"
+    },
+    {
+      "name": "bad-base45-whitespace-collapsed",
+      "target": "wire.fromBase45 → wire.decodeAuth",
+      "input": {
+        "base45": "Y50330XDH$:RPB1C/IGLAFW59PN1NE71DA7OGWI0O3.WEV90 .1HSBOX3QHOK$19NP8%HQL1O/G%*G$KMU%58JSDGKAQ7:6P72T:52W42LAJC$VBLJN58UFS8ZIG$TR3TQ.I%0IZUSYH392E4PS 8%01U5UPV9EQ8%CV-8DP4D6GC3E0461983 %VS3PRCV 3CL85"
+      },
+      "context": {
+        "intentFlags": 0
+      },
+      "expectedError": "WIRE_BASE45_INVALID",
+      "note": "the base45-double-space string with its double space collapsed to one; the reference decoder raises WIRE_BASE45_INVALID (D29)"
+    },
+    {
+      "name": "bad-signature-tampered",
+      "target": "core.verifyAuth",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": "2500000",
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": false
+        },
+        "auth": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "nonceRef": {
+            "index": 0,
+            "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+          },
+          "amount": null,
+          "signature": "Wl2wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+        },
+        "expectedAmount": null
+      },
+      "expectedError": "SIG_INVALID",
+      "note": "nonce-dynamic-spl-no-ata with bit 0 of the payer signature flipped"
+    },
+    {
+      "name": "bad-fee-payer-is-payer",
+      "target": [
+        "core.verifyAuth",
+        "core.signAsPayer"
+      ],
+      "input": {
+        "core.verifyAuth": {
+          "intent": {
+            "merchant": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+            "decimals": 6,
+            "amount": "2500000",
+            "lifetime": {
+              "kind": "nonce"
+            },
+            "includeCreateAta": false,
+            "tokenProgram": "spl-token",
+            "feePayer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "isStatic": false
+          },
+          "auth": {
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": null,
+            "signature": "CPJDHpIOwY42T6za4ZHwGtvI2V5ByRghwmxN+RumxrL2/EFElqFXVLKroITbMy6P/+SznpbE5x19/8jyXtUnAw=="
+          },
+          "expectedAmount": null
+        },
+        "core.signAsPayer": {
+          "input": {
+            "intent": {
+              "merchant": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+              "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+              "decimals": 6,
+              "amount": "2500000",
+              "lifetime": {
+                "kind": "nonce"
+              },
+              "includeCreateAta": false,
+              "tokenProgram": "spl-token",
+              "feePayer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+              "isStatic": false
+            },
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": "2500000"
+          },
+          "payerSeed": "PAYER_SEED"
+        }
+      },
+      "expectedError": "WIRE_FEE_PAYER_IS_PAYER",
+      "note": "an intent whose merchant, and so fee payer, is the payer; the signature is valid, so receive rule 9 is the only failure (D30)"
+    },
+    {
+      "name": "bad-static-amount-mismatch",
+      "target": "core.verifyAuth",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": null,
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": true
+        },
+        "auth": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "nonceRef": {
+            "index": 0,
+            "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+          },
+          "amount": "2500000",
+          "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+        },
+        "expectedAmount": "5000000"
+      },
+      "expectedError": "CANON_AMOUNT_MISMATCH",
+      "note": "nonce-static-spl verified with expectedAmount 5000000 against an AUTH for 2500000"
+    },
+    {
+      "name": "bad-static-no-expected-amount",
+      "target": "core.verifyAuth",
+      "input": {
+        "intent": {
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+          "decimals": 6,
+          "amount": null,
+          "lifetime": {
+            "kind": "nonce"
+          },
+          "includeCreateAta": false,
+          "tokenProgram": "spl-token",
+          "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "isStatic": true
+        },
+        "auth": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "nonceRef": {
+            "index": 0,
+            "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+          },
+          "amount": "2500000",
+          "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+        },
+        "expectedAmount": null
+      },
+      "expectedError": "CANON_AMOUNT_MISMATCH",
+      "expectedDetail": {
+        "expected": null
+      },
+      "note": "nonce-static-spl verified without expectedAmount (D30)"
+    },
+    {
+      "name": "bad-mint-hook-active",
+      "target": "core.evaluateMint → core.assertMintCompatible",
+      "input": {
+        "raw": {
+          "mint": "8SFqwqnq4whPhs8icwHA2hQg3hUoN1qrCLK1SBx3WKwe",
+          "tokenProgram": "token-2022",
+          "decimals": 6,
+          "freezeAuthority": null,
+          "extensions": [
+            {
+              "extension": "transferHook",
+              "state": {
+                "authority": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+                "programId": "EdmxWPmx2WH6WgFfTdu9xfkYf3k1g5wD1zccTVySEEh1"
+              }
+            }
+          ]
+        },
+        "checkedAt": 0
+      },
+      "expectedError": "MINT_INCOMPATIBLE",
+      "expectedDetail": {
+        "blockers": [
+          "transfer-hook-active"
+        ]
+      },
+      "note": "RawMintData with a transferHook extension whose programId is set (to the PAYER2 address); no chain involved"
+    },
+    {
+      "name": "bad-nonce-return-wrong-signer",
+      "target": "core.verifyNonceReturn",
+      "input": {
+        "received": {
+          "nonceIndex": 0,
+          "newNonceValue": "4EUcifGtcxuNK2pVZCHjjGb6GEGW2WzQRsXcTpLfrx7Y",
+          "signature": "/nCh6LIEHQ2ZkJLcAgGpt4y9Xga8qslFwhhBZXvZp5xJGOrOU7DL2/vaRDBOcD/K/PVBKHyE4NLDhYT/qL02BA=="
+        },
+        "ledger": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "spentAgainstValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        }
+      },
+      "expectedError": "NONCE_RETURN_UNTRUSTED",
+      "note": "the correct statement signed by PAYER2 instead of the merchant recorded in the ledger"
+    },
+    {
+      "name": "bad-nonce-return-other-payer",
+      "target": "core.verifyNonceReturn",
+      "input": {
+        "received": {
+          "nonceIndex": 0,
+          "newNonceValue": "4EUcifGtcxuNK2pVZCHjjGb6GEGW2WzQRsXcTpLfrx7Y",
+          "signature": "hNMsKnSeRqY2B9jlGFGUoOYBRQyWDXsn3KGzm8/swjKbkL1p0idm+mBQXVAEmd23ppj77GICEENR1SC83u2hBA=="
+        },
+        "ledger": {
+          "payer": "EdmxWPmx2WH6WgFfTdu9xfkYf3k1g5wD1zccTVySEEh1",
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "spentAgainstValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        }
+      },
+      "expectedError": "NONCE_RETURN_UNTRUSTED",
+      "note": "the genuine nonce-return-signed payload verified by PAYER2, whose ledger has slot 0 spent at the same merchant against the same value — the D28 regression test"
+    },
+    {
+      "name": "bad-nonce-return-other-prior-value",
+      "target": "core.verifyNonceReturn",
+      "input": {
+        "received": {
+          "nonceIndex": 0,
+          "newNonceValue": "4EUcifGtcxuNK2pVZCHjjGb6GEGW2WzQRsXcTpLfrx7Y",
+          "signature": "twRphYFJOVFLBOYxjb0NbPZEoUYzX60hYroKR4WhsifSlEJNMtboL3c2v9e0dLvCV1Wd/Zz8XNCU4uQtVPMKCg=="
+        },
+        "ledger": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "spentAgainstValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        }
+      },
+      "expectedError": "NONCE_RETURN_UNTRUSTED",
+      "note": "a genuine return signed over NONCE_VALUE_PREV, verified against a ledger recording NONCE_VALUE (D28)"
+    },
+    {
+      "name": "bad-nonce-return-unchanged-value",
+      "target": "core.verifyNonceReturn",
+      "input": {
+        "received": {
+          "nonceIndex": 0,
+          "newNonceValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee",
+          "signature": "fwCi1GNo355SWG0WP4yl78E158RFeapKOxbh70x1pFFGD/OvRsmrwmr9uX4omu7tFELpCKf5TpgZKQl0GiRbBg=="
+        },
+        "ledger": {
+          "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+          "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          "spentAgainstValue": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+        }
+      },
+      "expectedError": "NONCE_RETURN_UNTRUSTED",
+      "note": "a genuinely signed return whose newNonceValue equals the recorded spentAgainstValue"
+    },
+    {
+      "name": "bad-duplicate-auth-live",
+      "target": "client.queue.accept",
+      "input": {
+        "payment": {
+          "input": {
+            "intent": {
+              "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+              "decimals": 6,
+              "amount": "2500000",
+              "lifetime": {
+                "kind": "nonce"
+              },
+              "includeCreateAta": false,
+              "tokenProgram": "spl-token",
+              "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "isStatic": false
+            },
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": "2500000"
+          },
+          "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgygJSYAAAAAAAYA",
+          "auth": {
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": null,
+            "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+          }
+        },
+        "tier": "T2",
+        "amount": "2500000",
+        "precheck": null
+      },
+      "context": {
+        "limits": {
+          "receiptCapByTier": {
+            "T0": "18446744073709551615",
+            "T1": "20000000",
+            "T2": "5000000"
+          },
+          "queueExposureCap": "50000000",
+          "maxConsecutiveFailedSends": 3,
+          "sendWindowMs": 86400000
+        },
+        "queue": [
+          {
+            "id": "nonce:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9:0:2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee",
+            "state": "queued",
+            "tier": "T2",
+            "amount": "2500000"
+          }
+        ]
+      },
+      "expectedError": "WIRE_DUPLICATE_AUTH",
+      "note": "the queue already holds nonce:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9:0:2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee in state queued"
+    },
+    {
+      "name": "bad-duplicate-auth-settled",
+      "target": "client.queue.accept",
+      "input": {
+        "payment": {
+          "input": {
+            "intent": {
+              "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+              "decimals": 6,
+              "amount": "2500000",
+              "lifetime": {
+                "kind": "nonce"
+              },
+              "includeCreateAta": false,
+              "tokenProgram": "spl-token",
+              "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "isStatic": false
+            },
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": "2500000"
+          },
+          "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgygJSYAAAAAAAYA",
+          "auth": {
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": null,
+            "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+          }
+        },
+        "tier": "T2",
+        "amount": "2500000",
+        "precheck": null
+      },
+      "context": {
+        "limits": {
+          "receiptCapByTier": {
+            "T0": "18446744073709551615",
+            "T1": "20000000",
+            "T2": "5000000"
+          },
+          "queueExposureCap": "50000000",
+          "maxConsecutiveFailedSends": 3,
+          "sendWindowMs": 86400000
+        },
+        "queue": [
+          {
+            "id": "nonce:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9:0:2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee",
+            "state": "settled",
+            "tier": "T2",
+            "amount": "2500000"
+          }
+        ]
+      },
+      "expectedError": "WIRE_DUPLICATE_AUTH",
+      "note": "the queue already holds nonce:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9:0:2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee in state settled (D31)"
+    },
+    {
+      "name": "bad-t1-without-precheck",
+      "target": "client.queue.accept",
+      "input": {
+        "payment": {
+          "input": {
+            "intent": {
+              "merchant": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "mint": "GyGKxMyg1p9SsHfm15MkNUu1u9TN2JtTspcdmrtGUdse",
+              "decimals": 6,
+              "amount": "2500000",
+              "lifetime": {
+                "kind": "nonce"
+              },
+              "includeCreateAta": false,
+              "tokenProgram": "spl-token",
+              "feePayer": "9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+              "isStatic": false
+            },
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": "2500000"
+          },
+          "messageBytes": "gAIBBAmBOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlIqI4910CfGV/VLbLTy6XXLKZwm/HZQSG/N0iAG0D29cAJhqn4Qv8bADx6+cYQfnFfIsHRBwJkdJYJjMC9at3cqGufP6+To+wsyes2s/Ee7jjHKBqEKGWLYWrJSj7RvrkP8JBlw0LqMltpTKfl4XdLiJtZqaHAEPSEJdjBtxgJDjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtSSjGKNHCxurpAziQWZVhKVknOlxj+TY2wUYUrIc30Qan1RcZLFaO4IqEX3PSl4jPA1wxRbIas0TYBi6pQAAABt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKkdoMDvDn7J1Y0vC7SGN4WRsa8uWeDboRE7+8b75cYQ3wIFAwMHAQQEAAAACAQEBgIBCgygJSYAAAAAAAYA",
+          "auth": {
+            "payer": "AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+            "nonceRef": {
+              "index": 0,
+              "value": "2zezgkijhUjMoaRvfuDxTZ5bWjMjESKMnoPa3bBDssee"
+            },
+            "amount": null,
+            "signature": "W12wLCE0iPhf6ZLZ0S6gQ1JnxF/BwnPnmQBevLzP8fFNfh60h4ijJV3QsKms2/LP02dtbY+R1g8ImnIpwfGIDA=="
+          }
+        },
+        "tier": "T1",
+        "amount": "2500000",
+        "precheck": null
+      },
+      "context": {
+        "limits": {
+          "receiptCapByTier": {
+            "T0": "18446744073709551615",
+            "T1": "20000000",
+            "T2": "5000000"
+          },
+          "queueExposureCap": "50000000",
+          "maxConsecutiveFailedSends": 3,
+          "sendWindowMs": 86400000
+        },
+        "queue": []
+      },
+      "expectedError": "LIMIT_PRECHECK_REQUIRED",
+      "note": "tier T1 on the nonce path with no NonceVerdict (D30)"
+    }
+  ]
+}

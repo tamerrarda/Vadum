@@ -1,0 +1,19 @@
+# Agent skill symlinks (local install, see ~/dev/solana-dev-skill)
+.claude/
+.agents/
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Throwaway devnet keys written by `pnpm phase0 --init-key` (zero value, never committed)
+.devnet/
+
+# Local noise
+.DS_Store
+*.log
+
+# Third-party reference material: kept locally, not redistributed from a public repository (D25)
+plan/references/zypp-labs-whitepaper-v1.0-2026-03-19.txt

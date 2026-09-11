@@ -1,0 +1,34 @@
+{
+  "name": "@vadum/client",
+  "version": "0.0.0",
+  "description": "RPC, nonce pool, mint cache, merchant queue and submission for Vadum offline payments",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tamerrarda/Vadum.git",
+    "directory": "packages/client"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@solana-program/system": "catalog:",
+    "@solana-program/token": "catalog:",
+    "@solana/kit": "catalog:",
+    "@vadum/core": "workspace:*",
+    "@vadum/wire": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

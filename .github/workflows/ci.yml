@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Fixtures reproduce byte-for-byte from the committed seeds (24-SPEC)
+        run: pnpm fixtures:check
+      - name: One version of every @solana/* package (D1)
+        run: pnpm check:solana-versions
+      - name: packages/fixtures depends on no @vadum/* package (D33)
+        run: pnpm check:fixtures-deps
+      - name: No stream imports the fixture generator's reference modules (D33)
+        run: pnpm check:reference-imports
+      - name: Test-key warning present in the fixture seeds (24-SPEC)
+        run: pnpm check:test-keys
+      - name: core source-size budget (20-ARCHITECTURE)
+        run: pnpm check:core-size
+
+  gate-g1:
+    # Gate G1 (plan/50-INTEGRATION.md, D34): Stream A may not merge into main with a stub body left.
+    if: github.event_name == 'pull_request' && github.head_ref == 'stream/core'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: node scripts/check-no-stubs.mjs

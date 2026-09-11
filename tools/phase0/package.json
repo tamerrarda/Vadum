@@ -1,0 +1,25 @@
+{
+  "name": "@vadum/tool-phase0",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Phase 0 live-chain de-risk for Vadum (plan/60-PHASE0-derisk.md)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "phase0": "node src/phase0.ts"
+  },
+  "dependencies": {
+    "@solana-program/system": "catalog:",
+    "@solana-program/token": "catalog:",
+    "@solana/kit": "catalog:",
+    "@vadum/fixtures": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

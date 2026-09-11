@@ -1,0 +1,28 @@
+{
+  "name": "vadum-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "fixtures:generate": "node packages/fixtures/src/generate.ts",
+    "fixtures:check": "node packages/fixtures/src/generate.ts --check",
+    "check:solana-versions": "node scripts/check-solana-versions.mjs",
+    "check:fixtures-deps": "node scripts/check-fixtures-deps.mjs",
+    "check:test-keys": "node scripts/check-test-key-warning.mjs",
+    "check:core-size": "node scripts/check-core-size.mjs",
+    "check:no-stubs": "node scripts/check-no-stubs.mjs",
+    "check:reference-imports": "node scripts/check-reference-imports.mjs",
+    "phase0": "node tools/phase0/src/phase0.ts",
+    "verify": "pnpm typecheck && pnpm test && pnpm fixtures:check && pnpm check:solana-versions && pnpm check:fixtures-deps && pnpm check:reference-imports && pnpm check:test-keys && pnpm check:core-size"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

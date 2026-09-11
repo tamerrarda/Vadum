@@ -1,0 +1,33 @@
+name: release
+
+# Wired but deliberately not triggered before v1 (plan/01-DECISIONS.md D27). The npm names are held by
+# 0.0.0 placeholders. The packages export TypeScript sources today, so the first real publish needs a
+# build step added to each public package before this workflow is run.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "publish-v1" to publish every public @vadum/* package
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: inputs.confirm == 'publish-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      - run: pnpm -r --filter "./packages/**" publish --access public --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
