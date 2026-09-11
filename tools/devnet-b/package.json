@@ -1,0 +1,26 @@
+{
+  "name": "@vadum/devnet-b",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stream B devnet verification: the B6-B10 done-when clauses run against the live cluster",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@solana-program/system": "catalog:",
+    "@solana-program/token": "catalog:",
+    "@solana-program/token-2022": "catalog:",
+    "@solana/kit": "catalog:",
+    "@vadum/client": "workspace:*",
+    "@vadum/core": "workspace:*",
+    "@vadum/wire": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -28,7 +28,10 @@
     "zxing-wasm": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@types/qrcode": "catalog:",
-    "typescript": "catalog:"
+    "@vadum/fixtures": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
