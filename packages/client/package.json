@@ -29,6 +29,8 @@
     "@vadum/wire": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@vadum/fixtures": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
