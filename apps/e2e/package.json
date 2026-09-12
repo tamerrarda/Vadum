@@ -1,0 +1,16 @@
+{
+  "name": "@vadum/app-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Browser tests: the parts of apps/AIRPLANE-MODE-CHECKLIST.md a Chromium run can prove (D40)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

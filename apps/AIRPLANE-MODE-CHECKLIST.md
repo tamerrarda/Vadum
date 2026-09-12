@@ -20,6 +20,21 @@ nothing about another.
 | 9 | Open the payer app in a **browser tab** (not installed) | It shows history and an install prompt, and offers no way to sign | The standalone gate is the real storage control, not a permission prompt |
 | 10 | Clear site data, relaunch the installed app | It enters RECOVERY, says "Cannot pay offline — reconnect once to restore", and refuses to sign | Fail safe, never silent (C3) |
 
+## What CI checks, and why it does not replace this list (D40)
+
+`apps/e2e` runs four of these behaviours in headless Chromium on every push, against the built apps:
+
+| Step | What CI covers | What it still cannot say |
+|---|---|---|
+| 3 | The worker serves a **navigation** from cache with the network cut, and every file in `precache-manifest.json` — the scanner's `.wasm` included — is really in that cache | Cutting Chromium's network is devtools-style offline, which this document's own preamble says does not reproduce a cold start. An installed app, force-quit, launched from the home screen with the radio off, is still the only real test |
+| 9 | A browser tab renders the install screen and exposes no scan or sign affordance at all | Nothing about iOS, where the gate exists because of WebKit's ITP |
+| 10 | An epoch marker with no ledger enters RECOVERY with the exact copy, and refuses to sign | That clearing site data on a real device leaves exactly that state |
+| — | The merchant's offline tier refuses a sale above its cap before any code is rendered | Nothing about the payer's own per-payment cap: that screen is reachable only by scanning |
+| 4 | **Nothing.** The camera cannot be driven headlessly | Everything. This is the step that fails silently on iOS, and it has no automated substitute |
+
+So a green CI run narrows what a failed device run can be caused by. It does not shorten this list, and
+**gate G4 is unaffected by it.**
+
 ## Notes for the run
 
 - Step 4 is the one that fails silently on iOS. If it fails, check that the `.wasm` is listed in

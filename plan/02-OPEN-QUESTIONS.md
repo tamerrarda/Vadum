@@ -244,7 +244,7 @@ frozen signature.
 | G1 · Core green | ✅ every core fixture and property test; no `INTERNAL_NOT_IMPLEMENTED` in `packages/core/src` |
 | G2 · Wire green | ✅ all 21 codec negatives in check order, all 3 client negatives, every fixture round-trips |
 | G3 · Loopback | ✅ `packages/integration` — the full path including a real scanner read, no network, no camera |
-| G4 · Two-device offline | ⬜ needs two phones and `apps/AIRPLANE-MODE-CHECKLIST.md` |
+| G4 · Two-device offline | ⬜ needs two phones and `apps/AIRPLANE-MODE-CHECKLIST.md`. **D40 does not move this gate:** `apps/e2e` now runs a weaker form of checklist steps 3, 9 and 10 in headless Chromium on every push, which narrows what a failed device run can be caused by — but step 4, the camera opening offline and reading a code, has no automated substitute, and it is the step that fails silently on iOS |
 | G5 · Settlement | 🟡 the assertion is satisfied **from Node**: `tools/devnet-b` step 6 settles a payment on devnet through `core`, `wire` and `client`. The gate as written follows G4, so it is not closed until the payment comes off a phone |
 | G6 · Recovery | 🟡 all three submission failure classes, the nonce return and reconciliation are produced on devnet (`plan/references/stream-b-devnet-log.md`, steps 7–13) and in CI (`plan/references/integration-tests.md`). The storage-wipe half needs a device |
 
