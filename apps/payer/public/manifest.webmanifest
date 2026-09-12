@@ -1,0 +1,19 @@
+{
+  "name": "Vadum Payer",
+  "short_name": "Vadum",
+  "description": "Pay offline on Solana. Payments are signed with no network and travel as QR codes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b0f",
+  "theme_color": "#0b0b0f",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

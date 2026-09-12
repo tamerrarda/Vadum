@@ -1,0 +1,22 @@
+{
+  "name": "@vadum/integration",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The cross-package integration tests of plan/50-INTEGRATION.md, starting with gate G3",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@solana-program/system": "catalog:",
+    "@solana-program/token": "catalog:",
+    "@solana/kit": "catalog:",
+    "@types/node": "catalog:",
+    "@vadum/client": "workspace:*",
+    "@vadum/core": "workspace:*",
+    "@vadum/fixtures": "workspace:*",
+    "@vadum/wire": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
