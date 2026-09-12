@@ -10,12 +10,12 @@ packages:
 # pinned explicitly because @solana-program/token-2022 peer-depends on it, and a default install
 # otherwise resolves a second version beside kit's own. `pnpm check:solana-versions` enforces it.
 catalog:
-  "@solana/kit": 8.0.0
-  "@solana/sysvars": 8.0.0
-  "@solana-program/system": 0.14.0
-  "@solana-program/token": 0.16.0
-  "@solana-program/token-2022": 0.16.0
-  "@solana/webcrypto-ed25519-polyfill": 8.0.0
+  "@solana/kit": 8.3.0
+  "@solana/sysvars": 8.3.0
+  "@solana-program/system": 0.14.1
+  "@solana-program/token": 0.16.1
+  "@solana-program/token-2022": 0.16.1
+  "@solana/webcrypto-ed25519-polyfill": 8.3.0
   # The QR versions recorded in the fixtures are this encoder's output.
   qrcode: 1.5.4
   zxing-wasm: 3.1.3
