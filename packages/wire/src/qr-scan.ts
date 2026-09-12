@@ -139,7 +139,10 @@ class CameraScanner implements Scanner {
   async #readFrame(video: HTMLVideoElement): Promise<string | null> {
     if (this.#detector !== null) {
       const [found] = await this.#detector.detect(video);
-      return found?.rawValue ?? null;
+      // An empty rawValue is not a code. `??` alone would pass it through, and base45 decodes the
+      // empty string to zero bytes (D29), so the loop would end with an empty payload instead of
+      // looking at the next frame.
+      return found?.rawValue === undefined || found.rawValue === '' ? null : found.rawValue;
     }
     const width = video.videoWidth;
     const height = video.videoHeight;
