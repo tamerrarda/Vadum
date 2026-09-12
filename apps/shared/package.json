@@ -1,24 +1,24 @@
 {
-  "name": "@vadum/app-merchant",
+  "name": "@vadum/app-shared",
   "version": "0.0.0",
   "private": true,
+  "description": "Browser runtime both Vadum apps share: storage, keys, the standalone gate, and failure copy",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node ../../scripts/build-precache.mjs dist",
-    "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@solana/kit": "catalog:",
-    "@vadum/app-shared": "workspace:*",
+    "@solana/webcrypto-ed25519-polyfill": "catalog:",
     "@vadum/client": "workspace:*",
     "@vadum/core": "workspace:*",
-    "@vadum/wire": "workspace:*",
-    "zxing-wasm": "catalog:"
+    "@vadum/wire": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vitest": "catalog:"
   }
 }

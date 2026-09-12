@@ -1,0 +1,19 @@
+{
+  "name": "Vadum Merchant",
+  "short_name": "Vadum POS",
+  "description": "Accept Solana payments offline. Payments are verified on the device and submitted when you reconnect.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b0f",
+  "theme_color": "#0b0b0f",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

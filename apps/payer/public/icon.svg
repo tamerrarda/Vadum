@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vadum">
+  <rect width="512" height="512" rx="96" fill="#0b0b0f" />
+  <!-- A QR corner and a V: offline payment, in one mark. Replaced by the real asset before filming. -->
+  <path d="M96 96h112v112H96z" fill="none" stroke="#7ee787" stroke-width="28" />
+  <path d="M304 96h112v112H304z" fill="none" stroke="#7ee787" stroke-width="28" />
+  <path d="M96 304h112v112H96z" fill="none" stroke="#7ee787" stroke-width="28" />
+  <path d="M272 288l48 128 48-128" fill="none" stroke="#e7e7ea" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

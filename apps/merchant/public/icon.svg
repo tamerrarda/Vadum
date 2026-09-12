@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vadum Merchant">
+  <rect width="512" height="512" rx="96" fill="#0b0b0f" />
+  <!-- The payer mark inverted: this side reads codes rather than showing them. -->
+  <path d="M96 96h112v112H96z" fill="none" stroke="#f0c674" stroke-width="28" />
+  <path d="M304 96h112v112H304z" fill="none" stroke="#f0c674" stroke-width="28" />
+  <path d="M96 304h112v112H96z" fill="none" stroke="#f0c674" stroke-width="28" />
+  <path d="M272 352l40 40 96-104" fill="none" stroke="#e7e7ea" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
