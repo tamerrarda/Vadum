@@ -72,7 +72,7 @@ export interface VerifiedPayment {
   readonly auth: Auth;
 }
 
-export type MintBlocker = 'transfer-hook-active' | 'transfer-fee-nonzero' | 'default-account-state-frozen' | 'non-transferable';
+export type MintBlocker = 'transfer-hook-active' | 'transfer-fee-nonzero' | 'default-account-state-frozen' | 'non-transferable' | 'paused';
 
 export type MintWarning =
   | 'permanent-delegate'

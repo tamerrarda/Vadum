@@ -111,10 +111,30 @@ describe('evaluateMint', () => {
     ['an unreadable transfer fee', { extension: 'transferFeeConfig', state: { transferFeeConfigAuthority: null } }, 'transfer-fee-nonzero'],
     ['frozen-by-default accounts', { extension: 'defaultAccountState', state: { accountState: 'frozen' } }, 'default-account-state-frozen'],
     ['a non-transferable mint', { extension: 'nonTransferable', state: {} }, 'non-transferable'],
+    ['a mint observed paused', { extension: 'pausableConfig', state: { authority: PAXOS, paused: true } }, 'paused'],
   ] as const)('blocks %s', (_label, extension, blocker) => {
     const record = evaluateMint(withExtension(USDG, extension as RawMintExtension), 0);
     expect(record.compatible).toBe(false);
     expect(record.blockers).toContain(blocker);
+  });
+
+  it('lets a pausable mint through while it is running, but never caches it forever (D22)', () => {
+    const running = evaluateMint(withExtension(USDC, { extension: 'pausableConfig', state: { authority: PAXOS, paused: false } }), 0);
+    expect(running.compatible).toBe(true);
+    expect(running.warnings).toContain('pausable');
+    // Without `mutable` this record would never expire, and a pause is the most time-varying thing
+    // TOK-3 lists — so the one property that must not be cached forever would be.
+    expect(running.mutable).toBe(true);
+  });
+
+  it('warns rather than blocks when the pause state is unreadable', () => {
+    // A jsonParsed spelling change must not take every pausable mint offline; a pause can be lifted,
+    // unlike a transfer fee, so this deliberately does not fail safe into a block.
+    const unknown = evaluateMint(withExtension(USDC, { extension: 'pausableConfig', state: { authority: null } }), 0);
+    expect(unknown.compatible).toBe(true);
+    expect(unknown.blockers).toEqual([]);
+    expect(unknown.warnings).toContain('pausable');
+    expect(unknown.mutable).toBe(true);
   });
 
   it('warns on an extension it does not recognise, never silently passes', () => {
