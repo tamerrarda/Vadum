@@ -44,6 +44,7 @@ import {
   DEFAULT_QUEUE_LIMITS,
   LAMPORTS_PER_SIGNATURE,
   precheckNonce,
+  submit,
   type VadumRpc,
 } from '@vadum/client';
 import {
@@ -368,21 +369,20 @@ async function run(merchantKeyPath: string): Promise<void> {
     expect(!absent.ok && absent.reason === 'absent', '8', `an invented nonce under a fresh payer must read absent; got ${show(absent)}`);
     await paced('8', 'ok', 'the pre-check separates a consumed slot (stale) from a nonce account that never existed (absent): the T1 mitigation, live');
 
-    // 9 · SUBMIT_EXECUTION_FAILED (B9, SOL-7). T0 because the cap is about pre-confirmation handover.
+    // 9 · SUBMIT_EXECUTION_FAILED — the failure that actually costs the merchant (B9, SOL-7, D21).
+    // Preflight rejects an overdraft before it lands, and a payment that never lands charges nothing,
+    // so the expensive class has to be produced deliberately: preflight skipped, transaction lands,
+    // fee taken. That is the only way to watch `feeCharged: true` come out of the shipped classifier
+    // rather than out of a test double — which is exactly what an adversarial review called out.
     const overdraftSlot = await pool.reserveSlot(merchant, Date.now());
     const overdraft = await signedPayment(intentFor(merchant, mint, MINTED * 10n), payerKey, overdraftSlot, MINTED * 10n, mintCache);
-    const overdraftQueue = createQueue(rpc, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
-    await overdraftQueue.accept(overdraft.payment, 'T0', MINTED * 10n);
     const lamportsBefore = await rpc.getBalance(merchant);
-    const [overdraftOutcome] = await overdraftQueue.drain(merchantKey);
+    const overdraftOutcome = await submit(rpc, overdraft.payment, merchantKey, { skipPreflight: true });
     const charged = lamportsBefore - (await rpc.getBalance(merchant));
-    expect(overdraftOutcome?.kind === 'failed' && overdraftOutcome.code === 'SUBMIT_EXECUTION_FAILED', '9', `expected SUBMIT_EXECUTION_FAILED; got ${show(overdraftOutcome)}`);
-    expect(overdraftQueue.consecutiveFailedSends() === 1, '9', `the failed-send counter must read 1; it reads ${overdraftQueue.consecutiveFailedSends()}`);
-    log(
-      '9',
-      'observed',
-      `an overdraft was classified SUBMIT_EXECUTION_FAILED with feeCharged ${String(overdraftOutcome.kind === 'failed' && overdraftOutcome.feeCharged)}; ${charged} lamports left the merchant (preflight rejects it before it lands, which is why nothing is charged here — Phase 0 step 14 measured the landed case), counter at 1`,
-    );
+    expect(overdraftOutcome.kind === 'failed' && overdraftOutcome.code === 'SUBMIT_EXECUTION_FAILED', '9', `expected SUBMIT_EXECUTION_FAILED; got ${show(overdraftOutcome)}`);
+    expect(overdraftOutcome.kind === 'failed' && overdraftOutcome.feeCharged, '9', 'a landed execution failure must report feeCharged true');
+    expect(charged > 0n, '9', `the merchant must have paid the fee; its balance moved by ${charged} lamports`);
+    log('9', 'observed', `an overdraft sent with preflight skipped landed, failed, and was classified SUBMIT_EXECUTION_FAILED with feeCharged true; ${charged} lamports left the merchant`);
 
     // 10 · SUBMIT_NONCE_STALE never touches the counter (B9, D21)
     const replay = await signedPayment(intentFor(merchant, mint, AMOUNT), payerKey, { index: slot.index, value: spentAgainstValue }, AMOUNT, mintCache);
@@ -416,9 +416,9 @@ async function run(merchantKeyPath: string): Promise<void> {
     const reconciled = await immediate.reconcile(Date.now());
     expect(reconciled.settled.includes(settledSlot.index), '12', `the settled slot must reconcile as settled; got ${show(reconciled)}`);
     expect(reconciled.released.includes(abandoned.index), '12', `the abandoned slot must be released past the window; got ${show(reconciled)}`);
-    // The overdraft was rejected at preflight, so its slot never advanced: nothing to recover, and
-    // holding it spent forever would punish the payer for a payment that can no longer land.
-    expect(reconciled.released.includes(overdraftSlot.index), '12', `the overdraft slot must be released, not settled; got ${show(reconciled)}`);
+    // The overdraft landed and failed, which advances the nonce exactly as a success does (SOL-8), so
+    // its slot reconciles as settled and the payer gets the capacity back.
+    expect(reconciled.settled.includes(overdraftSlot.index), '12', `the overdraft slot advanced, so it must reconcile as settled; got ${show(reconciled)}`);
     log(
       '12',
       'ok',

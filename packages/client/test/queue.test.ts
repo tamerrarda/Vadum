@@ -174,7 +174,9 @@ describe('drain and the failed-send counter (D21)', () => {
   };
 
   it('stops accepting after three consecutive execution failures', async () => {
-    const rpc = fakeRpc({ sendPayment: executionFailure });
+    // `landed-failed` is what makes these execution failures rather than free ones: the fee follows
+    // the cluster's answer about the signature, never the error text.
+    const rpc = fakeRpc({ sendPayment: executionFailure, signatureOutcome: 'landed-failed' });
     const queue = createQueue(rpc, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
     const payment = await paymentOf(NONCE_FIXTURE);
     for (let index = 0; index < 3; index++) await queue.accept(onSlot(payment, index), 'T2', 1_000_000n);
@@ -191,6 +193,7 @@ describe('drain and the failed-send counter (D21)', () => {
   it('resets the counter on a settlement, and keeps retrying a failed payment', async () => {
     let fail = true;
     const rpc = fakeRpc({
+      signatureOutcome: 'landed-failed',
       sendPayment: async () => {
         if (fail) throw new Error('InstructionError [2, {"Custom": 1}]');
         return 'sig';

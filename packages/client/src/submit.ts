@@ -1,18 +1,24 @@
 // Submission, and the classification D21 insists on: SUBMIT_NONCE_STALE, SUBMIT_NONCE_ABSENT and
 // SUBMIT_EXECUTION_FAILED are three different events with three different costs, and collapsing them
 // hides an honest race behind the same message as near-certain fraud.
+//
+// `feeCharged` is decided by the chain, never by the shape of an error string. After a failed send the
+// signature is looked up: a transaction the cluster processed charged its fee even though it failed,
+// and one the cluster never saw charged nothing (SOL-7). An earlier version read `/simulat|preflight/`
+// out of the RPC's prose, which would have put a wrong number in the merchant's ledger the moment the
+// endpoint changed its wording.
 
-import type { Nonce } from '@solana/kit';
+import { getSignatureFromTransaction, getTransactionDecoder, type Nonce } from '@solana/kit';
 import { buildWireTransaction, deriveNonceAddress, VadumError, type VadumErrorCode, type VerifiedPayment } from '@vadum/core';
 import { precheckNonce } from './nonce-check.ts';
-import type { PaymentLifetime, VadumRpc } from './rpc.ts';
+import type { PaymentLifetime, SendOptions, VadumRpc } from './rpc.ts';
 
 export type SubmitOutcome =
   | {
       readonly kind: 'settled';
       readonly signature: string;
       /** The value the merchant signs into a NONCE_RETURN (D28); null on the fresh path, which has
-       *  no nonce account at all (plan/questions/stream-b.md B-3). */
+       *  no nonce account at all, and null when the slot cannot be read back. */
       readonly newNonceValue: Nonce | null;
     }
   | {
@@ -23,7 +29,6 @@ export type SubmitOutcome =
       readonly detail?: string;
     };
 
-/** Only an executed transaction costs the merchant a fee; validation failures are free (SOL-7). */
 const EXECUTION_MARKERS = ['InstructionError', 'custom program error', 'insufficient funds', 'insufficient lamports', 'AccountFrozen'];
 const EXPIRY_MARKERS = ['BlockhashNotFound', 'block height exceeded', 'BlockHeightExceeded', 'TransactionExpired'];
 const TRANSPORT_MARKERS = [
@@ -46,24 +51,32 @@ const text = (error: unknown): string => {
   return context === undefined ? base : `${base} ${JSON.stringify(context, (_key, value: unknown) => (typeof value === 'bigint' ? value.toString() : value))}`;
 };
 
-/** A rejection at preflight never reaches the validator, so it costs nothing (SOL-7, Phase 0 step 11). */
-const wasSimulated = (message: string): boolean => /simulat|preflight/i.test(message);
-
-/** What the thrown error says on its own, before asking the chain about the nonce. */
-function classifyError(error: unknown): { readonly code: VadumErrorCode; readonly feeCharged: boolean } | null {
+/** What the thrown error says about itself. It never decides `feeCharged`; the chain does. */
+function codeFromError(error: unknown): VadumErrorCode | null {
   const message = text(error);
-  if (message.includes('already been processed') || message.includes('AlreadyProcessed')) return { code: 'SUBMIT_ALREADY_PROCESSED', feeCharged: false };
-  if (EXECUTION_MARKERS.some((marker) => message.includes(marker))) return { code: 'SUBMIT_EXECUTION_FAILED', feeCharged: !wasSimulated(message) };
-  if (EXPIRY_MARKERS.some((marker) => message.includes(marker))) return { code: 'SUBMIT_BLOCKHASH_EXPIRED', feeCharged: false };
-  if (TRANSPORT_MARKERS.some((marker) => message.includes(marker))) return { code: 'SUBMIT_RPC_UNAVAILABLE', feeCharged: false };
+  if (message.includes('already been processed') || message.includes('AlreadyProcessed')) return 'SUBMIT_ALREADY_PROCESSED';
+  if (EXECUTION_MARKERS.some((marker) => message.includes(marker))) return 'SUBMIT_EXECUTION_FAILED';
+  if (EXPIRY_MARKERS.some((marker) => message.includes(marker))) return 'SUBMIT_BLOCKHASH_EXPIRED';
+  if (TRANSPORT_MARKERS.some((marker) => message.includes(marker))) return 'SUBMIT_RPC_UNAVAILABLE';
   return null;
+}
+
+/** The slot's value after settlement, which is what a NONCE_RETURN carries (D28). */
+async function newNonceValueOf(rpc: VadumRpc, payment: VerifiedPayment): Promise<Nonce | null> {
+  const { payer, nonceRef } = payment.input;
+  if (nonceRef === null) return null;
+  const state = await rpc.getNonceAccount(await deriveNonceAddress(payer, nonceRef.index));
+  // An unreadable slot leaves it null rather than guessing: a return carrying the value the slot was
+  // spent against is refused by the payer anyway (D28), and silence is safer.
+  return state.kind === 'initialized' ? state.value : null;
 }
 
 /**
  * Attaches the fee-payer signature and submits, through the confirmer that matches the payment's
- * lifetime (SOL-15). On failure the nonce account decides between a stale value and an absent one.
+ * lifetime (SOL-15). On failure the chain decides what it cost, and the nonce account decides between
+ * a stale value and an absent one.
  */
-export async function submit(rpc: VadumRpc, payment: VerifiedPayment, feePayerKey: CryptoKeyPair): Promise<SubmitOutcome> {
+export async function submit(rpc: VadumRpc, payment: VerifiedPayment, feePayerKey: CryptoKeyPair, options?: SendOptions): Promise<SubmitOutcome> {
   const { intent, payer, nonceRef } = payment.input;
   const lifetime: PaymentLifetime =
     intent.lifetime.kind === 'nonce' && nonceRef !== null
@@ -73,22 +86,30 @@ export async function submit(rpc: VadumRpc, payment: VerifiedPayment, feePayerKe
         : (() => {
             throw new VadumError('INTERNAL_NOT_APPLICABLE', { reason: 'a nonce-path payment without a nonce reference' });
           })();
-  const wireTransaction = await buildWireTransaction(payment, feePayerKey);
 
-  let signature: string;
+  const wireTransaction = await buildWireTransaction(payment, feePayerKey);
+  // Known before the send, so a failure can be looked up even when the send itself reported nothing.
+  const signature = getSignatureFromTransaction(
+    getTransactionDecoder().decode(wireTransaction) as Parameters<typeof getSignatureFromTransaction>[0],
+  );
+
   try {
-    signature = await rpc.sendPayment(wireTransaction, lifetime);
+    return { kind: 'settled', signature: await rpc.sendPayment(wireTransaction, lifetime, options), newNonceValue: await newNonceValueOf(rpc, payment) };
   } catch (error) {
     const detail = text(error).slice(0, 400);
-    const fromError = classifyError(error);
-    // A failure that actually landed is definitive, and so is a duplicate; nothing the nonce account
-    // says can change either. A rejection at preflight is NOT definitive: a missing nonce account
-    // reports an InstructionError there too, and calling that an execution failure is exactly the
-    // conflation D21 forbids.
-    if (fromError?.code === 'SUBMIT_ALREADY_PROCESSED' || (fromError?.code === 'SUBMIT_EXECUTION_FAILED' && fromError.feeCharged)) {
-      return { kind: 'failed', ...fromError, detail };
-    }
-    if (lifetime.kind === 'fresh') return { kind: 'failed', ...(fromError ?? { code: 'SUBMIT_RPC_UNAVAILABLE' as VadumErrorCode, feeCharged: false }), detail };
+    const outcome = await rpc.getSignatureOutcome(signature);
+
+    // A dropped socket after a successful landing is not a failure: the payment settled, and telling
+    // the merchant otherwise would have them retry a payment that already went through.
+    if (outcome === 'landed-ok') return { kind: 'settled', signature, newNonceValue: await newNonceValueOf(rpc, payment) };
+    // It executed and failed, so the fee left the merchant's wallet. This is the expensive class.
+    if (outcome === 'landed-failed') return { kind: 'failed', code: 'SUBMIT_EXECUTION_FAILED', feeCharged: true, detail };
+
+    // Nothing landed, so nothing was charged. What remains is deciding which free failure it was.
+    const fromError = codeFromError(error);
+    if (fromError === 'SUBMIT_ALREADY_PROCESSED') return { kind: 'failed', code: fromError, feeCharged: false, detail };
+    if (lifetime.kind === 'fresh') return { kind: 'failed', code: fromError ?? 'SUBMIT_RPC_UNAVAILABLE', feeCharged: false, detail };
+
     // On the nonce path the account is the witness that matters, and it outranks the error string: a
     // stale nonce is reported by the RPC as a missing blockhash, which is not what happened (D21).
     const verdict = await precheckNonce(rpc, payment);
@@ -98,12 +119,6 @@ export async function submit(rpc: VadumRpc, payment: VerifiedPayment, feePayerKe
         : { kind: 'failed', code: 'SUBMIT_NONCE_ABSENT', feeCharged: false, detail };
     }
     // The nonce is exactly as claimed, so the send itself is what failed.
-    return { kind: 'failed', ...(fromError ?? { code: 'SUBMIT_RPC_UNAVAILABLE' as VadumErrorCode, feeCharged: false }), detail };
+    return { kind: 'failed', code: fromError ?? 'SUBMIT_RPC_UNAVAILABLE', feeCharged: false, detail };
   }
-
-  if (nonceRef === null) return { kind: 'settled', signature, newNonceValue: null };
-  const state = await rpc.getNonceAccount(await deriveNonceAddress(payer, nonceRef.index));
-  // An unreadable slot leaves newNonceValue null rather than guessing: a NONCE_RETURN carrying the
-  // value the slot was spent against is rejected by the payer anyway (D28), and silence is safer.
-  return { kind: 'settled', signature, newNonceValue: state.kind === 'initialized' ? state.value : null };
 }

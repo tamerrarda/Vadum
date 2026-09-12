@@ -46,21 +46,37 @@ describe('submit', () => {
     expect(await submit(rpc, payment, await merchantKey())).toEqual({ kind: 'settled', signature: 'sig-3', newNonceValue: null });
   });
 
+  // `feeCharged` comes from the chain, not from the error text: the same message means a charged fee
+  // when the cluster processed the transaction and no fee when it never saw it.
   it.each([
-    ['an execution failure that landed charges the merchant (SOL-7)', 'Error processing Instruction 2: custom program error: 0x1', 'SUBMIT_EXECUTION_FAILED', true],
-    ['the same failure caught at preflight costs nothing', 'Transaction simulation failed: InstructionError [1, {"Custom": 1}]', 'SUBMIT_EXECUTION_FAILED', false],
-    ['an expired blockhash', 'TransactionExpiredBlockheightExceededError: block height exceeded', 'SUBMIT_BLOCKHASH_EXPIRED', false],
-    ['a duplicate submission', 'This transaction has already been processed', 'SUBMIT_ALREADY_PROCESSED', false],
-    ['a dead connection', 'TypeError: fetch failed', 'SUBMIT_RPC_UNAVAILABLE', false],
-  ] as const)('classifies %s', async (_name, message, code, feeCharged) => {
+    ['an execution failure that landed charges the merchant (SOL-7)', 'Error processing Instruction 2: custom program error: 0x1', 'landed-failed', 'SUBMIT_EXECUTION_FAILED', true],
+    ['the same failure caught at preflight costs nothing', 'Transaction simulation failed: InstructionError [1, {"Custom": 1}]', 'absent', 'SUBMIT_EXECUTION_FAILED', false],
+    ['an expired blockhash', 'TransactionExpiredBlockheightExceededError: block height exceeded', 'absent', 'SUBMIT_BLOCKHASH_EXPIRED', false],
+    ['a duplicate submission', 'This transaction has already been processed', 'absent', 'SUBMIT_ALREADY_PROCESSED', false],
+    ['a dead connection', 'TypeError: fetch failed', 'absent', 'SUBMIT_RPC_UNAVAILABLE', false],
+  ] as const)('classifies %s', async (_name, message, signatureOutcome, code, feeCharged) => {
     const payment = await paymentOf(NONCE_FIXTURE);
     const rpc = fakeRpc({
       nonceAccounts: initialized(payment.input.nonceRef?.value as Nonce, payment.input.payer),
+      signatureOutcome,
       sendPayment: async () => {
         throw new Error(message);
       },
     });
     expect(await submit(rpc, payment, await merchantKey())).toMatchObject({ kind: 'failed', code, feeCharged });
+  });
+
+  it('reports a payment that landed while the socket dropped as settled, not as a failure', async () => {
+    const payment = await paymentOf(NONCE_FIXTURE);
+    const rpc = fakeRpc({
+      nonceAccounts: initialized(advanced, payment.input.payer),
+      signatureOutcome: 'landed-ok',
+      sendPayment: async () => {
+        throw new Error('SolanaError: WebSocket failed to connect');
+      },
+    });
+    // Telling the merchant this failed would have them retry a payment that already went through.
+    expect(await submit(rpc, payment, await merchantKey())).toMatchObject({ kind: 'settled', newNonceValue: advanced });
   });
 
   it('separates a stale nonce from an absent one when the error says nothing (D21)', async () => {

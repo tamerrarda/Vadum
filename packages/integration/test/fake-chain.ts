@@ -24,6 +24,12 @@ export interface FakeChain extends VadumRpc {
   failNext: Error | null;
   /** Set to reject every submission, for the consecutive-failure counter (D21, D23). */
   failAlways: Error | null;
+  /**
+   * Whether a forced failure represents a transaction that **landed** and failed at execution, so the
+   * cluster charged the fee (SOL-7). It is what `getSignatureOutcome` reports, and therefore what
+   * decides `feeCharged` — the error string does not.
+   */
+  failLands: boolean;
   balances: Map<Address, bigint>;
   tokenBalances: Map<Address, bigint>;
 }
@@ -40,6 +46,7 @@ export function createFakeChain(options: { readonly mint?: RawMintData } = {}): 
     setups,
     failNext: null,
     failAlways: null,
+    failLands: false,
     balances: new Map(),
     tokenBalances: new Map(),
 
@@ -77,6 +84,9 @@ export function createFakeChain(options: { readonly mint?: RawMintData } = {}): 
     },
     async getBalance(address) {
       return chain.balances.get(address) ?? 0n;
+    },
+    async getSignatureOutcome() {
+      return chain.failLands ? 'landed-failed' : 'absent';
     },
     async sendSetup(instructions, feePayerKey) {
       setups.push({ instructions, feePayerKey });

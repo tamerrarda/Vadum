@@ -249,3 +249,13 @@ frozen signature.
 
 `wire/measure.ts` (B5) is still unwritten and still blocked on **WIRE-6**, which is the last item
 standing between the repository and the measurement deliverable.
+
+---
+
+## Found by an adversarial review — 2026-09-12
+
+Four advisers read the merged repository independently. What they found, and where each is closed:
+
+| ID | Finding | Status |
+|---|---|---|
+| REV-12 | **`feeCharged` was decided by the wording of an RPC error.** `submit.ts` tested the message against `/simulat\|preflight/i`, so a provider whose prose differs would put a wrong number in the merchant's ledger and leave the failed-send counter silent. Worse, the README's claim that the three submission classes are "three distinct observable events" rested on a landed-and-charged failure that **no shipped code path had ever produced on chain**: `stream-b-devnet-log.md` step 9 recorded `feeCharged false` because preflight rejected the overdraft, and the only charged observation came from Phase 0, which builds payments with the fixture generator's reference modules | ✅ RESOLVED 2026-09-12 — `VadumRpc.getSignatureOutcome` asks the cluster whether the signature landed, and `feeCharged` follows that answer. A payment that landed while the confirmation socket dropped is now reported **settled** instead of failed. `tools/devnet-b` step 9 sends the overdraft with preflight skipped, so the charged class is observed through the shipped classifier on a live chain |
