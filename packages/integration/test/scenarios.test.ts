@@ -62,7 +62,9 @@ describe('4 · execution failure — the payer cannot cover it', () => {
     const payment = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT);
 
     // What the chain does with an overdraft that reaches execution: it lands, it fails, the fee is
-    // taken, and the nonce is gone (SOL-7, Phase 0 step 14).
+    // taken, and the nonce is gone (SOL-7, Phase 0 step 14). `failLands` is what makes the fee real —
+    // `feeCharged` is read from the signature's outcome, never from the error text.
+    devices.chain.failLands = true;
     devices.chain.failNext = new Error('Error processing Instruction 2: custom program error: 0x1');
     await devices.queue.accept(payment, 'T2', AMOUNT);
     const [outcome] = await devices.queue.drain(devices.merchantKey);
@@ -220,6 +222,7 @@ describe('11 · cap enforcement at every boundary (D23)', () => {
 
     // Failed-send counter: three execution failures in a row and the till stops accepting offline.
     const failing = createQueue(devices.chain, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
+    devices.chain.failLands = true;
     devices.chain.failAlways = new Error('Error processing Instruction 2: custom program error: 0x1');
     const third = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now()), AMOUNT);
     for (const payment of [first, second, third]) await failing.accept(payment, 'T2', AMOUNT);
@@ -230,6 +233,7 @@ describe('11 · cap enforcement at every boundary (D23)', () => {
     const fourth = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now()), AMOUNT);
     await expectCode(() => failing.accept(fourth, 'T2', AMOUNT), 'LIMIT_FAILED_SENDS');
     devices.chain.failAlways = null;
+    devices.chain.failLands = false;
 
     // Send window: what sat unsent for a day is voided rather than submitted.
     const expiring = createQueue(devices.chain, createMemoryStore(), DEFAULT_QUEUE_LIMITS);

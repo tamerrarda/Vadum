@@ -19,6 +19,7 @@ import {
   type Blockhash,
   type Instruction,
   type Nonce,
+  type Signature,
   type Transaction,
 } from '@solana/kit';
 import { fetchMaybeNonce, getNonceSize } from '@solana-program/system';
@@ -55,6 +56,12 @@ export interface VadumRpc {
   getTokenBalance(ata: Address): Promise<bigint | null>;
   isAtaFrozen(ata: Address): Promise<boolean | null>;
   getBalance(address: Address): Promise<bigint>;
+  /**
+   * Did the cluster process this signature? The only authority on whether a failed payment charged
+   * the merchant: a transaction the cluster executed paid its fee even though it failed, and one the
+   * cluster never saw paid nothing (SOL-7). An RPC's error prose is not evidence of either.
+   */
+  getSignatureOutcome(signature: string): Promise<SignatureOutcome>;
 
   // Beyond 26-SPEC's read surface. Pool setup, pool close and submission have to send something, and
   // the spec gives no other seam; see plan/questions/stream-b.md B-1.
@@ -69,7 +76,20 @@ export interface VadumRpc {
    * Sends an already-signed payment and confirms it with the confirmer that matches its lifetime:
    * the durable-nonce factory on the nonce path, never the blockhash one (SOL-15).
    */
-  sendPayment(wireTransaction: Uint8Array, lifetime: PaymentLifetime): Promise<string>;
+  sendPayment(wireTransaction: Uint8Array, lifetime: PaymentLifetime, options?: SendOptions): Promise<string>;
+}
+
+/** Whether the cluster processed a signature, and if so how it ended. */
+export type SignatureOutcome = 'landed-ok' | 'landed-failed' | 'absent';
+
+export interface SendOptions {
+  /**
+   * Skip the RPC's preflight simulation. **Not for product code.** Preflight rejects a payment that
+   * would fail at execution, which is what keeps a merchant from paying a fee for nothing — so
+   * skipping it exists only to observe the landed-and-charged failure deliberately, the way
+   * `tools/devnet-b` does when it proves that class is classified correctly (SOL-7, D21).
+   */
+  readonly skipPreflight?: boolean;
 }
 
 /**
@@ -163,10 +183,12 @@ export function createRpc(endpoint: string): VadumRpc {
   const commitment = 'confirmed' as const;
 
   /** Broadcast over HTTP and confirm by polling. Used for setup, and when no socket can be opened. */
-  const broadcastAndPoll = async (transaction: Transaction): Promise<string> => {
+  const broadcastAndPoll = async (transaction: Transaction, options: SendOptions = {}): Promise<string> => {
     const signature = getSignatureFromTransaction(transaction as Parameters<typeof getSignatureFromTransaction>[0]);
     const wire = getBase64EncodedWireTransaction(transaction);
-    await withRetry(() => client.sendTransaction(wire, { encoding: 'base64', preflightCommitment: commitment }).send());
+    await withRetry(() =>
+      client.sendTransaction(wire, { encoding: 'base64', preflightCommitment: commitment, skipPreflight: options.skipPreflight === true }).send(),
+    );
 
     const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
     while (Date.now() < deadline) {
@@ -237,8 +259,16 @@ export function createRpc(endpoint: string): VadumRpc {
       return broadcastAndPoll(signed as unknown as Transaction);
     },
 
-    async sendPayment(wireTransaction, lifetime) {
+    async getSignatureOutcome(signature) {
+      const status = (await withRetry(() => client.getSignatureStatuses([signature as Signature], { searchTransactionHistory: true }).send())).value[0];
+      if (status == null) return 'absent';
+      return status.err == null ? 'landed-ok' : 'landed-failed';
+    },
+
+    async sendPayment(wireTransaction, lifetime, options) {
       const transaction = getTransactionDecoder().decode(wireTransaction);
+      // Skipping preflight means kit's confirmers cannot be used: they preflight by construction.
+      if (options?.skipPreflight === true) return broadcastAndPoll(transaction, options);
       const { kind, ...lifetimeConstraint } = lifetime;
       // kit's confirmers read the lifetime off the transaction object, and a decoded one has none.
       const sendable = { ...transaction, lifetimeConstraint };

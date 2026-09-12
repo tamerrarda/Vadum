@@ -5,7 +5,7 @@ import { getBase64Encoder, type Address, type Blockhash, type Instruction, type 
 import { VadumError, verifyAuth, type Auth, type Intent, type RawMintData, type VadumErrorCode, type VerifiedPayment } from '@vadum/core';
 import { fixtures, type AuthJson, type IntentJson, type PositiveCase } from '@vadum/fixtures';
 import { expect } from 'vitest';
-import type { NonceAccountState, PaymentLifetime, VadumRpc } from '../src/rpc.ts';
+import type { NonceAccountState, PaymentLifetime, SignatureOutcome, VadumRpc } from '../src/rpc.ts';
 
 export const fromBase64 = (value: string): Uint8Array => new Uint8Array(getBase64Encoder().encode(value));
 
@@ -52,6 +52,8 @@ export interface FakeRpcOptions {
   readonly frozen?: boolean | null;
   readonly sendSetup?: (instructions: readonly Instruction[], feePayerKey: CryptoKeyPair) => Promise<string>;
   readonly sendPayment?: (wireTransaction: Uint8Array, lifetime: PaymentLifetime) => Promise<string>;
+  /** What the chain says about a looked-up signature; `absent` unless a test says otherwise. */
+  readonly signatureOutcome?: SignatureOutcome;
 }
 
 export interface FakeRpc extends VadumRpc {
@@ -95,6 +97,9 @@ export function fakeRpc(options: FakeRpcOptions = {}): FakeRpc {
     },
     async getBalance() {
       return rpc.balance;
+    },
+    async getSignatureOutcome() {
+      return options.signatureOutcome ?? 'absent';
     },
     async sendSetup(instructions, feePayerKey) {
       setups.push({ instructions, feePayerKey });

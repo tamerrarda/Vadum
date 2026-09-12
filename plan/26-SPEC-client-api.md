@@ -28,6 +28,13 @@ export interface VadumRpc {
   isAtaFrozen(ata: Address): Promise<boolean | null>;
   /** The payer's lamports, which `Pool.create` and `Pool.close` check against D38 before sending. */
   getBalance(address: Address): Promise<bigint>;
+  /**
+   * Did the cluster process this signature? Added 2026-09-12: it is the only authority on whether a
+   * failed payment charged the merchant. A transaction the cluster executed paid its fee even though
+   * it failed, and one the cluster never saw paid nothing (SOL-7) — so `SubmitOutcome.feeCharged` is
+   * read from here, never from the wording of an RPC error.
+   */
+  getSignatureOutcome(signature: string): Promise<'landed-ok' | 'landed-failed' | 'absent'>;
 
   // The send surface. Added 2026-09-12 (B-1): this interface was read-only, but `Pool.create`,
   // `Pool.close` and `submit` have to send a transaction and the spec gave them no other seam. The
@@ -44,7 +51,17 @@ export interface VadumRpc {
    * the durable-nonce factory on the nonce path, never the blockhash one (SOL-15). Because the
    * caller passes the lifetime, no call site can get that choice wrong.
    */
-  sendPayment(wireTransaction: Uint8Array, lifetime: PaymentLifetime): Promise<string>;
+  sendPayment(wireTransaction: Uint8Array, lifetime: PaymentLifetime, options?: SendOptions): Promise<string>;
+}
+
+export interface SendOptions {
+  /**
+   * Skip the RPC's preflight simulation. **Never in product code:** preflight is what stops a merchant
+   * paying a fee for a payment that was going to fail anyway. It exists so the landed-and-charged
+   * failure can be produced deliberately — `tools/devnet-b` step 9 uses it to prove that class is
+   * classified correctly on a live chain, which preflight otherwise makes unobservable (SOL-7, D21).
+   */
+  readonly skipPreflight?: boolean;
 }
 
 /**
