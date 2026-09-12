@@ -181,6 +181,12 @@ export const FAILURE_COPY: Readonly<Record<UserFacingCode, FailureCopy>> = {
     side: 'merchant',
     action: 'reconnect',
   },
+  LIMIT_PAYER_ALLOWANCE: {
+    title: 'Offline spending limit reached',
+    body: 'This device signs only a limited amount of offline payments in any 24 hours, and reconnecting does not reset it — that is what stops someone holding an unlocked phone from spending everything on it. The limit frees up 24 hours after the earliest of those payments.',
+    side: 'payer',
+    action: 'none',
+  },
 
   // ─── submission ─────────────────────────────────────────────────────────────────────────────────
   SUBMIT_NONCE_STALE: {

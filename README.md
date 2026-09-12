@@ -15,6 +15,10 @@ program of its own.
   mainnet (`plan/01-DECISIONS.md` D16).
 - **No secure element.** Keys are non-extractable WebCrypto keys; on the polyfill path used by older
   browsers they live in the JavaScript heap (D9).
+- **An unlocked phone pays for whoever holds it.** The payer app signs at most 20 per payment and 100
+  in any 24 hours, and reconnecting does not reset that — but the window follows the device clock, the
+  limits are app code, and the key exists on no other device, so a stolen phone's balance cannot be
+  moved away. The lock screen is the real control; keep the balance on the phone small (T12).
 - **No light client.** A fully offline merchant cannot verify the payer's balance, or that a nonce
   account exists behind a payment at all. An attacker with no on-chain presence can produce an `AUTH`
   that verifies offline. The online pre-check closes this in tiers T0 and T1; **in T2 it is

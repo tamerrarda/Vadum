@@ -12,7 +12,7 @@ describe('VadumError taxonomy', () => {
   it('lists every code exactly once', () => {
     expect(exhaustive).toBe(true);
     expect(new Set(VADUM_ERROR_CODES).size).toBe(VADUM_ERROR_CODES.length);
-    expect(VADUM_ERROR_CODES.length).toBe(46);
+    expect(VADUM_ERROR_CODES.length).toBe(47);
   });
 
   it('uses only the documented prefixes', () => {

@@ -30,6 +30,14 @@ export const POOL_LOW_WATER_MARK = 2;
  * 16 covers a payer who chose a larger pool while keeping recovery to sixteen account reads.
  */
 export const DEFAULT_RECOVER_PROBE = 16;
+/**
+ * The most this device signs offline in any 24 hours, in base units of a 6-decimal mint (T12, REV-17).
+ * 100 is the bound T12 used to quote as "the cap once per unspent slot" — a bound the pool never
+ * enforced, because re-arming a slot gave its allowance back.
+ */
+export const DEFAULT_SPEND_LIMIT = 100_000_000n;
+/** The rolling window `DEFAULT_SPEND_LIMIT` applies over, read from the device clock. */
+export const SPEND_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export interface PoolSlot {
   readonly index: number;
@@ -57,6 +65,15 @@ export interface PoolStatus {
   readonly epoch: string;
 }
 
+export interface SpendAllowance {
+  readonly limit: bigint;
+  /** Signed inside the window, including any entry the device clock places in the future. */
+  readonly spent: bigint;
+  readonly remaining: bigint;
+  /** When the earliest counted payment leaves the window; null when nothing is counted. */
+  readonly nextRefillAt: number | null;
+}
+
 export interface Pool {
   /**
    * What the payer's wallet needs before `create` (D38), each part read at call time (D7).
@@ -69,8 +86,18 @@ export interface Pool {
   /** Online. One signer; the payer pays the fee and the rent (D26). Throws NONCE_POOL_UNDERFUNDED,
    *  sending nothing, if the wallet cannot end the transaction at zero or rent-exempt (D38). */
   create(size: number, payerKey: CryptoKeyPair): Promise<PoolStatus>;
-  /** Offline. Lowest unspent slot with a known value, marked spent and PERSISTED before resolving. */
-  reserveSlot(merchant: Address, now: number): Promise<{ readonly index: number; readonly value: Nonce }>;
+  /**
+   * Offline. Lowest unspent slot with a known value, marked spent and PERSISTED before resolving —
+   * together with `amount` in the spend log. Throws LIMIT_PAYER_ALLOWANCE, changing nothing, when
+   * `amount` would take the last 24 hours past the spend limit.
+   */
+  reserveSlot(merchant: Address, now: number, amount: bigint): Promise<{ readonly index: number; readonly value: Nonce }>;
+  /**
+   * What this device may still sign offline at `now` (T12). Nothing gives allowance back except time:
+   * not `reconcile`, `applyNonceReturn`, `close`, `create` or `recover`. Each of those is one tap away
+   * for whoever holds the phone, so a limit any of them reset would bound nobody.
+   */
+  allowance(now: number): Promise<SpendAllowance>;
   /** Offline. Receive rule 12: the ledger record, then core.verifyNonceReturn, then the re-arm (D28). */
   applyNonceReturn(payload: NonceReturnPayload): Promise<PoolStatus>;
   /** Online. Re-reads every slot's on-chain value. Never changes slot state. */
@@ -100,7 +127,22 @@ interface PoolState {
   readonly size: number;
   readonly epoch: string;
   readonly slots: readonly PoolSlot[];
+  /** Every offline signing still inside the window. Absent in ledgers written before REV-17. */
+  readonly spendLog?: readonly SpendEntry[];
 }
+
+interface SpendEntry {
+  readonly at: number;
+  readonly amount: bigint;
+}
+
+/**
+ * An entry counts until the window has passed since it was made. One the clock places in the future
+ * counts too, so winding the clock back cannot bring allowance back; winding it forward can, and T12
+ * says so.
+ */
+const counted = (log: readonly SpendEntry[] | undefined, now: number, windowMs: number): readonly SpendEntry[] =>
+  (log ?? []).filter((entry) => entry.at > now - windowMs);
 
 const statusOf = (state: PoolState): PoolStatus => {
   const unspentCount = state.slots.filter((slot) => slot.state === 'unspent').length;
@@ -121,10 +163,31 @@ const rearmed = (slot: PoolSlot, value: Nonce | null, state: PoolSlot['state'] =
   ...(releasedAt === undefined ? {} : { releasedAt }),
 });
 
-export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, options?: { readonly sendWindowMs?: number }): Pool {
+export function createPool(
+  rpc: VadumRpc,
+  payer: Address,
+  store: KeyValueStore,
+  options?: { readonly sendWindowMs?: number; readonly spendLimit?: bigint; readonly spendLimitWindowMs?: number },
+): Pool {
   const key = `pool:${payer}`;
   const sendWindowMs = options?.sendWindowMs ?? SEND_WINDOW_MS;
+  const spendLimit = options?.spendLimit ?? DEFAULT_SPEND_LIMIT;
+  const spendLimitWindowMs = options?.spendLimitWindowMs ?? SPEND_LIMIT_WINDOW_MS;
   let current: PoolState | undefined;
+
+  /**
+   * The log outlives the pool it was written under. `create` and `recover` write a new ledger, and
+   * without this a thief would get a fresh allowance by closing the pool and opening another — which
+   * costs them nothing, since the refunded rent lands in the wallet they are holding.
+   */
+  const priorSpendLog = async (): Promise<readonly SpendEntry[]> => (current ?? (await store.get<PoolState>(key)))?.spendLog ?? [];
+
+  const allowanceOf = (state: PoolState | undefined, now: number): SpendAllowance => {
+    const entries = counted(state?.spendLog, now, spendLimitWindowMs);
+    const spent = entries.reduce((sum, entry) => sum + entry.amount, 0n);
+    const earliest = entries.length === 0 ? null : Math.min(...entries.map((entry) => entry.at));
+    return { limit: spendLimit, spent, remaining: spent >= spendLimit ? 0n : spendLimit - spent, nextRefillAt: earliest === null ? null : earliest + spendLimitWindowMs };
+  };
 
   const persist = async (state: PoolState): Promise<PoolStatus> => {
     current = state;
@@ -186,12 +249,18 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
         slots.push({ index, address, value: null, state: 'unspent' });
       }
       await rpc.sendSetup(instructions, payerKey);
-      await persist({ payer, size, epoch: crypto.randomUUID(), slots });
+      await persist({ payer, size, epoch: crypto.randomUUID(), slots, spendLog: await priorSpendLog() });
       return this.refresh();
     },
 
-    async reserveSlot(merchant, now) {
+    async reserveSlot(merchant, now, amount) {
       const state = await loaded();
+      // A zero or negative entry would lower the total rather than count against it.
+      if (amount <= 0n) throw new VadumError('LIMIT_PAYER_ALLOWANCE', { reason: 'an offline payment must be positive', amount });
+      const allowance = allowanceOf(state, now);
+      if (amount > allowance.remaining) {
+        throw new VadumError('LIMIT_PAYER_ALLOWANCE', { amount, spent: allowance.spent, limit: allowance.limit, nextRefillAt: allowance.nextRefillAt });
+      }
       const usable = state.slots.filter((candidate) => candidate.state === 'unspent' && candidate.value !== null);
       // A released slot still carries a payment some merchant could submit late, so it goes last and
       // the least recently released one goes first. Taking the lowest index unconditionally handed
@@ -199,9 +268,16 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
       // (NONCE-9). Costs nothing; the alternative was self-advancing the nonce, which costs SOL.
       const slot = usable.find((candidate) => candidate.releasedAt === undefined) ?? [...usable].sort((a, b) => (a.releasedAt ?? 0) - (b.releasedAt ?? 0))[0];
       if (slot?.value == null) throw new VadumError('NONCE_POOL_EXHAUSTED', { payer, size: state.size });
-      // Persisted before this resolves: the app signs only afterwards (D32).
-      await persist(withSlot(state, { ...slot, state: 'spent', spentAgainst: { value: slot.value, merchant, at: now } }));
+      // Persisted before this resolves: the app signs only afterwards (D32). The spend is logged in the
+      // same write, so a crash can never leave a signature that the limit did not count.
+      const spendLog = [...counted(state.spendLog, now, spendLimitWindowMs), { at: now, amount }];
+      await persist({ ...withSlot(state, { ...slot, state: 'spent', spentAgainst: { value: slot.value, merchant, at: now } }), spendLog });
       return { index: slot.index, value: slot.value };
+    },
+
+    async allowance(now) {
+      // A device with no ledger has signed nothing it still remembers; `reserveSlot` refuses it anyway.
+      return allowanceOf(current ?? (await store.get<PoolState>(key)), now);
     },
 
     async applyNonceReturn(payload) {
@@ -240,7 +316,7 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
         throw new VadumError('NONCE_LEDGER_MISSING', { payer, reason: 'no nonce account of this payer exists on chain', maxProbe });
       }
       // A new epoch: the old marker described a ledger that no longer exists.
-      return persist({ payer, size: (slots.at(-1)?.index ?? 0) + 1, epoch: crypto.randomUUID(), slots });
+      return persist({ payer, size: (slots.at(-1)?.index ?? 0) + 1, epoch: crypto.randomUUID(), slots, spendLog: await priorSpendLog() });
     },
 
     async close(payerKey) {

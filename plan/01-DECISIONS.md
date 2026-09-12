@@ -823,6 +823,9 @@ Two gaps between `23-SPEC` and `26-SPEC` that Streams B and C would each have fi
   **persists before resolving**; the payer app calls `signAsPayer` only after it resolves — and
   `applyNonceReturn(payload)`, which looks up the slot record, calls `core.verifyNonceReturn`, and
   re-arms the slot only on success.
+  *Amended 2026-09-13 (REV-17): `reserveSlot(merchant, now, amount)` also logs the amount in the same
+  write, and refuses a payment past the payer's 24-hour spend limit (T12). Re-arming a slot gives
+  back the slot, never the allowance.*
 - Stream C owns **durability**, not state: the IndexedDB `KeyValueStore`, the `localStorage` mirror,
   the pool epoch marker, RECOVERY detection, and the standalone-mode gate.
 - **Reconciliation re-arms settled slots.** If the on-chain value differs from `spentAgainstValue`,

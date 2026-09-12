@@ -303,10 +303,39 @@ as the control, which a PWA cannot provide offline — WebAuthn needs a credenti
 and iOS exposes no local-auth prompt to web apps — and the app's actual behaviour, asking for the amount
 to be typed again, defends against this not at all: a thief types it.
 
-**Mitigation, and the honest bound.** A **payer per-payment cap** (20, `31-PARAMETERS.md`), refused in
-the confirmation screen before anything is signed. Exposure is then the cap once per unspent slot —
-**100 base units at N=5** — until the payer reconnects, rather than the whole token balance. The device
-lock screen remains the only thing standing between a thief and that bound, and the README says so.
+**Mitigation.** Two limits, both refused before anything is signed. A **payer per-payment cap** (20,
+`31-PARAMETERS.md`) bounds one payment. A **24-hour spend limit** (100) bounds how many:
+`client/pool.ts` logs the amount of every payment it reserves a slot for, in the same write that marks
+the slot spent, and `reserveSlot` refuses one that would take the last 24 hours past the limit
+(`LIMIT_PAYER_ALLOWANCE`). The confirmation screen asks first, so the payer hears it before the Sign
+button rather than after.
+
+*Corrected 2026-09-13 (REV-17).* Until then this entry said exposure was "the cap once per unspent
+slot — 100 base units at N=5 — until the payer reconnects", and that bound was never enforced. Slots
+refill. `reconcile` re-arms every settled slot, and a `NONCE_RETURN` re-arms one with no network at
+all, so a thief who settles their own payments and taps "Refresh from the network" gets five more —
+the whole token balance, in cap-sized steps. Reconnecting was not where the exposure ended; it was
+the refill. The spend limit is therefore refilled by **nothing but time**: not `reconcile`,
+`applyNonceReturn`, `close`, `create` or `recover`, because each is one tap away for whoever holds the
+phone, and the refunded rent from a closed pool lands in the wallet the thief is holding. The entry
+also said "the README says so" about the lock screen; the README said nothing, and does now.
+
+**The bound, as a number:** at most **100 base units in any 24 hours by the device clock** — 100 for
+a thief who gives up within a day, 200 once a day has passed, 800 over a week, less if the balance
+runs out first (`theftExposure`, `apps/shared/src/limits.ts`). The payer cannot cut this short: the
+key is a non-extractable `CryptoKey` on that phone, so there is no other device from which to move the
+balance away. Keeping the balance on the device small is the only remedy, and it has to happen before
+the theft.
+
+What defeats it, stated so nobody reads the number as more:
+
+- **Setting the device clock forward.** The window is read from the device clock, which whoever holds
+  an unlocked phone can change, and each day skipped buys another 100. Winding it back buys nothing —
+  an entry dated in the future still counts.
+- **Using the key outside the app.** Every limit in this entry is app code. Anyone who can run their
+  own script in the app's origin — through remote debugging, for example — can sign with the stored
+  key directly (C2: no secure element).
+- **The device lock screen** is the only thing standing between a thief and every line above.
 
 What this deliberately does **not** claim: no hardware backing, no proof of who is holding the phone.
 A local-auth prompt over a key that lives in IndexedDB — or, on the polyfill path, in the JavaScript

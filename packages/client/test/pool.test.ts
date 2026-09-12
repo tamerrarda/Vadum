@@ -4,7 +4,7 @@ import { createKeyPairFromPrivateKeyBytes, getAddressFromPublicKey, getBase58Dec
 import { deriveNonceAddress, signNonceReturn } from '@vadum/core';
 import { MERCHANT_SEED, PAYER_SEED, PAYER2_SEED } from '@vadum/fixtures';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createPool, LAMPORTS_PER_SIGNATURE, POOL_LOW_WATER_MARK, SEND_WINDOW_MS, type Pool } from '../src/pool.ts';
+import { createPool, DEFAULT_SPEND_LIMIT, LAMPORTS_PER_SIGNATURE, POOL_LOW_WATER_MARK, SEND_WINDOW_MS, SPEND_LIMIT_WINDOW_MS, type Pool } from '../src/pool.ts';
 import type { NonceAccountState } from '../src/rpc.ts';
 import { createMemoryStore, type KeyValueStore } from '../src/store.ts';
 import { expectVadumError, fakeRpc, type FakeRpc } from './helpers.ts';
@@ -12,6 +12,8 @@ import { expectVadumError, fakeRpc, type FakeRpc } from './helpers.ts';
 const NONCE_RENT = 1_056_640n;
 const WALLET_RENT = 890_880n;
 const SIZE = 3;
+/** One base-unit amount per reservation, far inside the default spend limit. */
+const PAY = 1_000_000n;
 
 /** A distinct, real 32-byte nonce value: the recovery statement decodes these, so they must be valid. */
 const value = (seed: number): Nonce =>
@@ -39,9 +41,12 @@ const liveAccounts = (): Record<string, NonceAccountState> =>
   Object.assign({}, ...addresses.map((address, index) => initialized(address, value(index)))) as Record<string, NonceAccountState>;
 
 /** A created, funded pool of three slots, each holding a distinct value. */
-async function createdPool(store: KeyValueStore = createMemoryStore()): Promise<{ pool: Pool; rpc: FakeRpc; store: KeyValueStore }> {
+async function createdPool(
+  store: KeyValueStore = createMemoryStore(),
+  options?: Parameters<typeof createPool>[3],
+): Promise<{ pool: Pool; rpc: FakeRpc; store: KeyValueStore }> {
   const rpc = fakeRpc({ balance: NONCE_RENT * BigInt(SIZE) + LAMPORTS_PER_SIGNATURE, nonceRent: NONCE_RENT, walletRent: WALLET_RENT, nonceAccounts: liveAccounts() });
-  const pool = createPool(rpc, payer, store);
+  const pool = createPool(rpc, payer, store, options);
   await pool.create(SIZE, payerKey);
   return { pool, rpc, store };
 }
@@ -59,7 +64,7 @@ describe('recover', () => {
     expect(status.unspentCount).toBe(0);
 
     // Unknown history, so nothing may be signed against it…
-    await expectVadumError(() => pool.reserveSlot(merchant, 0), 'NONCE_POOL_EXHAUSTED');
+    await expectVadumError(() => pool.reserveSlot(merchant, 0, PAY), 'NONCE_POOL_EXHAUSTED');
     // …but the deposit comes back, which is what was impossible while `close` threw on a lost ledger.
     expect((await pool.close(payerKey)).refundedLamports).toBe(NONCE_RENT * BigInt(SIZE));
   });
@@ -141,25 +146,106 @@ describe('reserveSlot', () => {
   it('takes the lowest unspent slot and persists before resolving (D32)', async () => {
     const store = createMemoryStore();
     const { pool } = await createdPool(store);
-    const reserved = await pool.reserveSlot(merchant, 1_000);
+    const reserved = await pool.reserveSlot(merchant, 1_000, PAY);
     expect(reserved).toEqual({ index: 0, value: value(0) });
 
     // What a crash right after signing would leave behind: the store already says spent.
     const persisted = await store.get<{ slots: { index: number; state: string; spentAgainst?: { merchant: string } }[] }>(`pool:${payer}`);
     expect(persisted?.slots[0]).toMatchObject({ state: 'spent', spentAgainst: { merchant, at: 1_000 } });
-    expect((await pool.reserveSlot(merchant, 1_001)).index).toBe(1);
+    expect((await pool.reserveSlot(merchant, 1_001, PAY)).index).toBe(1);
     expect(pool.status().unspentCount).toBe(1);
   });
 
   it('throws NONCE_POOL_EXHAUSTED when every slot is spent, and NONCE_LEDGER_MISSING with no ledger', async () => {
     const { pool } = await createdPool();
-    for (let index = 0; index < SIZE; index++) await pool.reserveSlot(merchant, index);
-    await expectVadumError(() => pool.reserveSlot(merchant, 9), 'NONCE_POOL_EXHAUSTED');
+    for (let index = 0; index < SIZE; index++) await pool.reserveSlot(merchant, index, PAY);
+    await expectVadumError(() => pool.reserveSlot(merchant, 9, PAY), 'NONCE_POOL_EXHAUSTED');
 
     const empty = createPool(fakeRpc(), payer, createMemoryStore());
-    await expectVadumError(() => empty.reserveSlot(merchant, 0), 'NONCE_LEDGER_MISSING');
+    await expectVadumError(() => empty.reserveSlot(merchant, 0, PAY), 'NONCE_LEDGER_MISSING');
     await expectVadumError(() => empty.load(), 'NONCE_LEDGER_MISSING');
     expect(() => empty.status()).toThrow();
+  });
+});
+
+describe('the spend limit (T12, REV-17)', () => {
+  /** Every slot's value moves on chain, as it does when a merchant settles each payment. */
+  const settleAll = (rpc: FakeRpc, seed: number): void => {
+    rpc.nonceAccounts = Object.assign({}, ...addresses.map((address, index) => initialized(address, value(seed + index)))) as Record<string, NonceAccountState>;
+  };
+
+  it('is not refilled by reconnecting — the loop that made the old bound false', async () => {
+    // Default limit and the payer app's own cap, so the numbers are the published ones.
+    const CAP = 20_000_000n;
+    const { pool, rpc, store } = await createdPool();
+    for (let index = 0; index < SIZE; index++) await pool.reserveSlot(merchant, 0, CAP);
+
+    // What a thief holding the phone does: runs the merchant app, settles, taps "Refresh from the
+    // network". Every slot comes back — and under the old bound, so did every cap's worth of allowance.
+    settleAll(rpc, 10);
+    expect((await pool.reconcile(1)).settled).toEqual([0, 1, 2]);
+    expect(pool.status().unspentCount).toBe(SIZE);
+
+    await pool.reserveSlot(merchant, 2, CAP);
+    await pool.reserveSlot(merchant, 3, CAP);
+    expect(await pool.allowance(3)).toEqual({ limit: DEFAULT_SPEND_LIMIT, spent: DEFAULT_SPEND_LIMIT, remaining: 0n, nextRefillAt: SPEND_LIMIT_WINDOW_MS });
+
+    // A slot is free, the payment is one base unit, and it is still refused — before anything is
+    // persisted, so the refusal costs the payer no slot.
+    const before = await store.get(`pool:${payer}`);
+    await expectVadumError(() => pool.reserveSlot(merchant, 4, 1n), 'LIMIT_PAYER_ALLOWANCE', { spent: '100000000', limit: '100000000' });
+    expect(pool.status().unspentCount).toBe(1);
+    expect(await store.get(`pool:${payer}`)).toEqual(before);
+  });
+
+  it('is not refilled by a nonce return, by closing and re-creating the pool, or by recovering it', async () => {
+    const store = createMemoryStore();
+    const { pool } = await createdPool(store, { spendLimit: 2n * PAY });
+    await pool.reserveSlot(merchant, 1_000, PAY);
+    await pool.reserveSlot(merchant, 1_000, PAY);
+
+    const signature = await signNonceReturn({ payer, nonceIndex: 0, spentAgainstValue: value(0), newNonceValue: value(9) }, merchantKey);
+    await pool.applyNonceReturn({ nonceIndex: 0, newNonceValue: value(9), signature });
+    expect((await pool.allowance(1_000)).remaining).toBe(0n);
+
+    // The refunded rent lands in the wallet the thief is holding, so a fresh pool costs them nothing.
+    await pool.close(payerKey);
+    await pool.create(SIZE, payerKey);
+    expect((await pool.allowance(1_000)).remaining).toBe(0n);
+    await expectVadumError(() => pool.reserveSlot(merchant, 1_000, PAY), 'LIMIT_PAYER_ALLOWANCE');
+
+    await pool.recover();
+    expect((await createPool(fakeRpc(), payer, store, { spendLimit: 2n * PAY }).allowance(1_000)).spent).toBe(2n * PAY);
+  });
+
+  it('refills only as payments leave the window, and winding the clock back gives nothing back', async () => {
+    const { pool } = await createdPool(createMemoryStore(), { spendLimit: 2n * PAY });
+    await pool.reserveSlot(merchant, 1_000, PAY);
+    await pool.reserveSlot(merchant, 5_000, PAY);
+    expect(await pool.allowance(5_000)).toEqual({ limit: 2n * PAY, spent: 2n * PAY, remaining: 0n, nextRefillAt: 1_000 + SPEND_LIMIT_WINDOW_MS });
+
+    // Exactly a window after the first payment it no longer counts, and the whole remainder is usable.
+    const later = 1_000 + SPEND_LIMIT_WINDOW_MS;
+    expect(await pool.allowance(later)).toMatchObject({ spent: PAY, remaining: PAY, nextRefillAt: 5_000 + SPEND_LIMIT_WINDOW_MS });
+    await pool.reserveSlot(merchant, later, PAY);
+
+    // Set the clock back to before any of it: entries in the future still count.
+    expect((await pool.allowance(0)).remaining).toBe(0n);
+  });
+
+  it('refuses a zero or negative amount, which would lower the total instead of adding to it', async () => {
+    const { pool } = await createdPool();
+    for (const amount of [0n, -PAY]) await expectVadumError(() => pool.reserveSlot(merchant, 0, amount), 'LIMIT_PAYER_ALLOWANCE');
+    expect(pool.status().unspentCount).toBe(SIZE);
+    expect((await pool.allowance(0)).spent).toBe(0n);
+  });
+
+  it('treats a ledger written before the limit existed as having spent nothing', async () => {
+    const store = createMemoryStore();
+    await store.set(`pool:${payer}`, { payer, size: 1, epoch: 'old', slots: [{ index: 0, address: addresses[0], value: value(0), state: 'unspent' }] });
+    const pool = createPool(fakeRpc(), payer, store);
+    expect(await pool.allowance(0)).toEqual({ limit: DEFAULT_SPEND_LIMIT, spent: 0n, remaining: DEFAULT_SPEND_LIMIT, nextRefillAt: null });
+    expect((await pool.reserveSlot(merchant, 0, PAY)).index).toBe(0);
   });
 });
 
@@ -172,7 +258,7 @@ describe('applyNonceReturn (rule 12, D28)', () => {
 
   it('re-arms the slot only for a return signed by the recorded merchant', async () => {
     const { pool } = await createdPool();
-    await pool.reserveSlot(merchant, 1_000);
+    await pool.reserveSlot(merchant, 1_000, PAY);
     const status = await pool.applyNonceReturn(await payload(0, value(0), value(9)));
     expect(status.slots[0]).toEqual({ index: 0, address: addresses[0], value: value(9), state: 'unspent' });
     expect(status.unspentCount).toBe(SIZE);
@@ -180,7 +266,7 @@ describe('applyNonceReturn (rule 12, D28)', () => {
 
   it('changes nothing when the signature, payer or prior value is wrong', async () => {
     const { pool } = await createdPool();
-    await pool.reserveSlot(merchant, 1_000);
+    await pool.reserveSlot(merchant, 1_000, PAY);
     const otherKey = await createKeyPairFromPrivateKeyBytes(PAYER2_SEED);
 
     for (const bad of [
@@ -205,7 +291,7 @@ describe('applyNonceReturn (rule 12, D28)', () => {
 describe('refresh and close', () => {
   it('re-reads values without touching slot state', async () => {
     const { pool, rpc } = await createdPool();
-    await pool.reserveSlot(merchant, 1_000);
+    await pool.reserveSlot(merchant, 1_000, PAY);
     rpc.nonceAccounts = { ...rpc.nonceAccounts, ...initialized(addresses[0]!, value(42)) };
     const status = await pool.refresh();
     expect(status.slots[0]).toMatchObject({ value: value(42), state: 'spent' });
@@ -226,9 +312,9 @@ describe('refresh and close', () => {
 describe('reconcile (NONCE_DESYNC, D32)', () => {
   it('re-arms settled slots, releases abandoned ones, and keeps pending ones spent', async () => {
     const { pool, rpc } = await createdPool();
-    await pool.reserveSlot(merchant, 0); // slot 0 — will be settled
-    await pool.reserveSlot(merchant, 0); // slot 1 — abandoned past the window
-    await pool.reserveSlot(merchant, SEND_WINDOW_MS); // slot 2 — still inside the window
+    await pool.reserveSlot(merchant, 0, PAY); // slot 0 — will be settled
+    await pool.reserveSlot(merchant, 0, PAY); // slot 1 — abandoned past the window
+    await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY); // slot 2 — still inside the window
 
     rpc.nonceAccounts = { ...rpc.nonceAccounts, ...initialized(addresses[0]!, value(7)) };
     const outcome = await pool.reconcile(SEND_WINDOW_MS + 1);
@@ -244,7 +330,7 @@ describe('reconcile (NONCE_DESYNC, D32)', () => {
 
   it('releases a slot whose account the payer has closed (T7)', async () => {
     const { pool, rpc } = await createdPool();
-    await pool.reserveSlot(merchant, 0);
+    await pool.reserveSlot(merchant, 0, PAY);
     rpc.nonceAccounts = {};
     expect(await pool.reconcile(1)).toEqual({ settled: [], released: [0], stillPending: [] });
     expect(pool.status().slots[0]).toEqual({ index: 0, address: addresses[0], value: null, state: 'unknown' });
@@ -253,7 +339,7 @@ describe('reconcile (NONCE_DESYNC, D32)', () => {
   it('survives a reload: slot state lives in the store, not in memory', async () => {
     const store = createMemoryStore();
     const { pool, rpc } = await createdPool(store);
-    await pool.reserveSlot(merchant, 1_000);
+    await pool.reserveSlot(merchant, 1_000, PAY);
     const reopened = createPool(rpc, payer, store);
     expect((await reopened.load()).slots[0]).toMatchObject({ state: 'spent', spentAgainst: { merchant } });
   });
@@ -264,38 +350,38 @@ describe('released slots are reused last (NONCE-9)', () => {
     const { pool } = await createdPool();
     // Slot 0 is spent and then abandoned: the merchant never submitted, so reconciliation releases it
     // with its value unchanged — and that merchant can still submit the payment it holds.
-    await pool.reserveSlot(merchant, 0);
+    await pool.reserveSlot(merchant, 0, PAY);
     expect((await pool.reconcile(SEND_WINDOW_MS)).released).toEqual([0]);
 
     // Handing slot 0 straight back out would make that late submission race the next payment. It goes
     // last instead, so slots 1 and 2 are used first.
-    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(1);
-    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(2);
-    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(0);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY)).index).toBe(1);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY)).index).toBe(2);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY)).index).toBe(0);
   });
 
   it('takes the least recently released slot when every slot has been released', async () => {
     const { pool } = await createdPool();
-    await pool.reserveSlot(merchant, 0);
-    await pool.reserveSlot(merchant, 0);
-    await pool.reserveSlot(merchant, 5_000);
+    await pool.reserveSlot(merchant, 0, PAY);
+    await pool.reserveSlot(merchant, 0, PAY);
+    await pool.reserveSlot(merchant, 5_000, PAY);
     expect((await pool.reconcile(SEND_WINDOW_MS)).released).toEqual([0, 1]);
     expect((await pool.reconcile(SEND_WINDOW_MS + 5_000)).released).toEqual([2]);
 
     // Slots 0 and 1 were released first, so one of them comes before slot 2.
-    expect([0, 1]).toContain((await pool.reserveSlot(merchant, SEND_WINDOW_MS + 6_000)).index);
+    expect([0, 1]).toContain((await pool.reserveSlot(merchant, SEND_WINDOW_MS + 6_000, PAY)).index);
   });
 
   it('clears the mark once the slot settles, because its value has moved', async () => {
     const { pool, rpc } = await createdPool();
-    await pool.reserveSlot(merchant, 0);
+    await pool.reserveSlot(merchant, 0, PAY);
     await pool.reconcile(SEND_WINDOW_MS);
     expect(pool.status().slots[0]).toMatchObject({ releasedAt: SEND_WINDOW_MS });
 
     // Use up the unreleased slots so the released one comes round again, then let it settle.
-    await pool.reserveSlot(merchant, SEND_WINDOW_MS);
-    await pool.reserveSlot(merchant, SEND_WINDOW_MS);
-    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(0);
+    await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY);
+    await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS, PAY)).index).toBe(0);
 
     rpc.nonceAccounts = { ...rpc.nonceAccounts, ...initialized(addresses[0]!, value(9)) };
     expect((await pool.reconcile(SEND_WINDOW_MS)).settled).toContain(0);

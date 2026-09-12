@@ -33,7 +33,7 @@ describe('3 · race — one nonce value, two different payments, two merchants',
     const merchant2 = await getAddressFromPublicKey(merchant2Key.publicKey);
 
     // The payer signs twice against the SAME slot value: two different payments, to two merchants.
-    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now());
+    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT);
     const first = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT);
     const second = await signedPayment(intentFor(merchant2, 1_000_000n), devices.payerKey, slot, 1_000_000n);
     expect(first.messageBytes).not.toEqual(second.messageBytes);
@@ -58,7 +58,7 @@ describe('3 · race — one nonce value, two different payments, two merchants',
 describe('4 · execution failure — the payer cannot cover it', () => {
   it('charges the merchant, consumes the nonce, and counts against the failed-send limit', async () => {
     const devices = await twoDevices();
-    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now());
+    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT);
     const payment = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT);
 
     // What the chain does with an overdraft that reaches execution: it lands, it fails, the fee is
@@ -107,7 +107,7 @@ describe('5 · fabricated nonce — the cheapest attack in the system (T6, D21)'
 describe('6 · duplicate AUTH — while queued and after settlement (D31)', () => {
   it('refuses the same payment in both states', async () => {
     const devices = await twoDevices();
-    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now());
+    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT);
     const payment = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT);
 
     await devices.queue.accept(payment, 'T2', AMOUNT);
@@ -123,12 +123,12 @@ describe('6 · duplicate AUTH — while queued and after settlement (D31)', () =
 describe('7 · eviction — the ledger is gone', () => {
   it('refuses to hand out a slot rather than signing against an unknown one (C3, T4)', async () => {
     const devices = await twoDevices();
-    await devices.pool.reserveSlot(devices.merchant, Date.now());
+    await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT);
 
     // Exactly what clearing site data does to the payer's device.
     await devices.payerStore.delete(`pool:${devices.payer}`);
     const reopened = createPool(devices.chain, devices.payer, devices.payerStore);
-    await expectCode(() => reopened.reserveSlot(devices.merchant, Date.now()), 'NONCE_LEDGER_MISSING');
+    await expectCode(() => reopened.reserveSlot(devices.merchant, Date.now(), AMOUNT), 'NONCE_LEDGER_MISSING');
     await expectCode(() => reopened.load(), 'NONCE_LEDGER_MISSING');
 
     // One online session restores it, and reconciliation decides what each slot is.
@@ -140,7 +140,7 @@ describe('7 · eviction — the ledger is gone', () => {
 describe('8 · nonce return — offline recovery (D28)', () => {
   it('re-arms the slot for this payer only', async () => {
     const devices = await twoDevices();
-    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now());
+    const slot = await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT);
     const payment = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT);
     const outcome = await submit(devices.chain, payment, devices.merchantKey);
     if (outcome.kind !== 'settled' || outcome.newNonceValue === null) throw new Error('expected a settled payment with a new value');
@@ -167,8 +167,8 @@ describe('8 · nonce return — offline recovery (D28)', () => {
 describe('9 · reconciliation (D32)', () => {
   it('releases an abandoned slot only after the send window, and re-arms a settled one', async () => {
     const devices = await twoDevices();
-    const settled = await devices.pool.reserveSlot(devices.merchant, 0);
-    const abandoned = await devices.pool.reserveSlot(devices.merchant, 0);
+    const settled = await devices.pool.reserveSlot(devices.merchant, 0, AMOUNT);
+    const abandoned = await devices.pool.reserveSlot(devices.merchant, 0, AMOUNT);
     await devices.chain.advance(devices.payer, settled.index, nextValue(settled.value));
 
     // Inside the window the merchant may still submit, so the slot stays spent.
@@ -207,7 +207,7 @@ describe('10 · mint hard block', () => {
 describe('11 · cap enforcement at every boundary (D23)', () => {
   it('blocks the receipt cap, the exposure cap, the failed-send counter and the send window', async () => {
     const devices = await twoDevices();
-    const slots = [await devices.pool.reserveSlot(devices.merchant, Date.now()), await devices.pool.reserveSlot(devices.merchant, Date.now())];
+    const slots = [await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT), await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT)];
     const payments = await Promise.all(slots.map((slot) => signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, slot, AMOUNT)));
     const [first, second] = payments as [Awaited<ReturnType<typeof signedPayment>>, Awaited<ReturnType<typeof signedPayment>>];
 
@@ -224,13 +224,13 @@ describe('11 · cap enforcement at every boundary (D23)', () => {
     const failing = createQueue(devices.chain, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
     devices.chain.failLands = true;
     devices.chain.failAlways = new Error('Error processing Instruction 2: custom program error: 0x1');
-    const third = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now()), AMOUNT);
+    const third = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT), AMOUNT);
     for (const payment of [first, second, third]) await failing.accept(payment, 'T2', AMOUNT);
     const failures = await failing.drain(devices.merchantKey);
     expect(failures.map((outcome) => (outcome.kind === 'failed' ? outcome.code : 'settled'))).toEqual(['SUBMIT_EXECUTION_FAILED', 'SUBMIT_EXECUTION_FAILED', 'SUBMIT_EXECUTION_FAILED']);
     expect(failing.consecutiveFailedSends()).toBe(DEFAULT_QUEUE_LIMITS.maxConsecutiveFailedSends);
 
-    const fourth = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now()), AMOUNT);
+    const fourth = await signedPayment(intentFor(devices.merchant, AMOUNT), devices.payerKey, await devices.pool.reserveSlot(devices.merchant, Date.now(), AMOUNT), AMOUNT);
     await expectCode(() => failing.accept(fourth, 'T2', AMOUNT), 'LIMIT_FAILED_SENDS');
     devices.chain.failAlways = null;
     devices.chain.failLands = false;
