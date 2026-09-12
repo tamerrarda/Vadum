@@ -136,3 +136,101 @@ describe('engine selection (D10)', () => {
     await expectVadumError(() => scanner.next(), 'INTERNAL_NOT_APPLICABLE');
   });
 });
+
+describe('the BarcodeDetector path', () => {
+  // Node has no BarcodeDetector and no camera, so this cannot prove that a platform detector decodes a
+  // QR image — only `apps/AIRPLANE-MODE-CHECKLIST.md` step 4 on a real handset can, and the demo is
+  // filmed on exactly this path (D13). What it does prove is everything between the detector and the
+  // caller: the frame loop, the engine reported, the camera released, and scanned text left untouched.
+  // Until now that branch had never run at all: the engine-selection tests above use a detector whose
+  // `detect()` returns nothing.
+  const stubs: { restore: () => void }[] = [];
+
+  const withDetector = (rawValues: readonly string[]): { detected: number } => {
+    const state = { detected: 0 };
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    const tracks = [{ stopped: false, stop() { this.stopped = true; } }];
+
+    class StubDetector {
+      static async getSupportedFormats(): Promise<string[]> {
+        return ['qr_code'];
+      }
+      async detect(): Promise<readonly { rawValue: string }[]> {
+        const value = rawValues[state.detected++];
+        return value === undefined ? [] : [{ rawValue: value }];
+      }
+    }
+    (globalThis as Record<string, unknown>).BarcodeDetector = StubDetector;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { mediaDevices: { getUserMedia: async () => ({ getTracks: () => tracks }) } },
+    });
+    stubs.push({
+      restore: () => {
+        delete (globalThis as Record<string, unknown>).BarcodeDetector;
+        if (originalNavigator === undefined) delete (globalThis as Record<string, unknown>).navigator;
+        else Object.defineProperty(globalThis, 'navigator', originalNavigator);
+      },
+    });
+    return state;
+  };
+
+  const fakeVideo = (): HTMLVideoElement =>
+    ({ srcObject: null, playsInline: false, videoWidth: 640, videoHeight: 480, play: async () => undefined }) as unknown as HTMLVideoElement;
+
+  afterAll(() => {
+    for (const stub of stubs) stub.restore();
+  });
+
+  it('returns the payload the detector read, and reports which engine read it (D10)', async () => {
+    const fixture = fixtures.cases.find((candidate) => candidate.name === 'base45-double-space');
+    if (fixture === undefined) throw new Error('the double-space fixture is missing');
+    withDetector([fixture.expected.wireAuthBase45]);
+
+    const scanner = await createScanner({ wasmUrl });
+    expect(scanner.engine).toBe('barcode-detector');
+    const video = fakeVideo();
+    await scanner.start(video);
+    const result = await scanner.next();
+
+    expect(result.engine).toBe('barcode-detector');
+    // Receive rule 10 on this path too: the double space survives, because nothing trimmed it.
+    expect(result.rawText).toBe(fixture.expected.wireAuthBase45);
+    expect(result.rawText).toContain('  ');
+    expect(result.bytes).toEqual(fromBase64(fixture.expected.wireAuth));
+    expect(result.msElapsed).toBeGreaterThanOrEqual(0);
+
+    await scanner.stop();
+    expect(video.srcObject).toBeNull();
+  });
+
+  it('keeps looking while the detector finds nothing', async () => {
+    const fixture = fixtures.cases[0];
+    if (fixture === undefined) throw new Error('no positive fixtures');
+    // Two empty frames, then a code: `next()` must not resolve on an empty frame.
+    const state = withDetector(['', '', fixture.expected.wireIntentBase45]);
+    (globalThis as Record<string, unknown>).requestAnimationFrame = (callback: () => void) => {
+      setTimeout(callback, 0);
+      return 0;
+    };
+
+    const scanner = await createScanner({ wasmUrl });
+    await scanner.start(fakeVideo());
+    const result = await scanner.next();
+    expect(result.bytes).toEqual(fromBase64(fixture.expected.wireIntent));
+    expect(state.detected).toBe(3);
+    await scanner.stop();
+    delete (globalThis as Record<string, unknown>).requestAnimationFrame;
+  });
+
+  it('refuses a scan that is not base45 rather than repairing it', async () => {
+    const fixture = fixtures.negative.find((candidate) => candidate.name === 'bad-base45-whitespace-collapsed');
+    if (fixture === undefined) throw new Error('the collapsed-whitespace fixture is missing');
+    withDetector([fixture.input.base45 as string]);
+
+    const scanner = await createScanner({ wasmUrl });
+    await scanner.start(fakeVideo());
+    await expectVadumError(() => scanner.next(), 'WIRE_BASE45_INVALID');
+    await scanner.stop();
+  });
+});
