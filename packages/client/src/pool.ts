@@ -25,6 +25,11 @@ export const SEND_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const DEFAULT_POOL_SIZE = 5;
 /** Prompt the payer to reconnect at or below this many unspent slots (D23). */
 export const POOL_LOW_WATER_MARK = 2;
+/**
+ * How many derived seeds `recover` probes. N defaults to 5 and the seeds are consecutive from zero, so
+ * 16 covers a payer who chose a larger pool while keeping recovery to sixteen account reads.
+ */
+export const DEFAULT_RECOVER_PROBE = 16;
 
 export interface PoolSlot {
   readonly index: number;
@@ -70,6 +75,17 @@ export interface Pool {
   applyNonceReturn(payload: NonceReturnPayload): Promise<PoolStatus>;
   /** Online. Re-reads every slot's on-chain value. Never changes slot state. */
   refresh(): Promise<PoolStatus>;
+  /**
+   * Online. Rebuilds a lost ledger from the chain. Slot addresses derive from the payer and a fixed
+   * seed, so they are findable again with no local record at all — which is what makes the deposit
+   * recoverable after storage is wiped.
+   *
+   * Every recovered slot is `unknown`: nothing on chain says whether a merchant is still holding a
+   * payment signed against it, so the pool can be closed but never spent from. Accounts whose
+   * authority is no longer this payer are skipped — adopting one would promise a refund that cannot
+   * happen. Throws NONCE_LEDGER_MISSING when the payer has no slot on chain at all.
+   */
+  recover(maxProbe?: number): Promise<PoolStatus>;
   /** Online. Withdraws every slot; rent returns to the payer. */
   close(payerKey: CryptoKeyPair): Promise<{ refundedLamports: bigint }>;
   /** Online. The NONCE_DESYNC procedure over every slot recorded as spent. */
@@ -208,6 +224,23 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
       const slots: PoolSlot[] = [];
       for (const slot of state.slots) slots.push({ ...slot, value: (await readValue(slot)).value });
       return persist({ ...state, slots });
+    },
+
+    async recover(maxProbe = DEFAULT_RECOVER_PROBE) {
+      const slots: PoolSlot[] = [];
+      for (let index = 0; index < maxProbe; index++) {
+        const state = await rpc.getNonceAccount(await deriveNonceAddress(payer, index));
+        if (state.kind !== 'initialized' || state.authority !== payer) continue;
+        // `unknown`, never `unspent`: the chain cannot say whether some merchant still holds a payment
+        // signed against this value, and guessing in the usable direction is the one outcome the whole
+        // RECOVERY design exists to prevent (T4).
+        slots.push({ index, address: await deriveNonceAddress(payer, index), value: state.value, state: 'unknown' });
+      }
+      if (slots.length === 0) {
+        throw new VadumError('NONCE_LEDGER_MISSING', { payer, reason: 'no nonce account of this payer exists on chain', maxProbe });
+      }
+      // A new epoch: the old marker described a ledger that no longer exists.
+      return persist({ payer, size: (slots.at(-1)?.index ?? 0) + 1, epoch: crypto.randomUUID(), slots });
     },
 
     async close(payerKey) {
