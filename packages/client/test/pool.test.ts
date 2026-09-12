@@ -46,6 +46,41 @@ async function createdPool(store: KeyValueStore = createMemoryStore()): Promise<
   return { pool, rpc, store };
 }
 
+describe('recover', () => {
+  it('rebuilds a lost ledger from the derived addresses, and every slot comes back unknown', async () => {
+    const rpc = fakeRpc({ nonceAccounts: liveAccounts(), nonceRent: NONCE_RENT, walletRent: WALLET_RENT, balance: WALLET_RENT + LAMPORTS_PER_SIGNATURE });
+    // An empty store is the state a wiped device is in: the chain still holds the slots.
+    const pool = createPool(rpc, payer, createMemoryStore());
+    await expectVadumError(() => pool.load(), 'NONCE_LEDGER_MISSING');
+
+    const status = await pool.recover();
+    expect(status.slots.map((slot) => slot.state)).toEqual(['unknown', 'unknown', 'unknown']);
+    expect(status.slots.map((slot) => slot.value)).toEqual([value(0), value(1), value(2)]);
+    expect(status.unspentCount).toBe(0);
+
+    // Unknown history, so nothing may be signed against it…
+    await expectVadumError(() => pool.reserveSlot(merchant, 0), 'NONCE_POOL_EXHAUSTED');
+    // …but the deposit comes back, which is what was impossible while `close` threw on a lost ledger.
+    expect((await pool.close(payerKey)).refundedLamports).toBe(NONCE_RENT * BigInt(SIZE));
+  });
+
+  it('skips an account whose authority is no longer the payer', async () => {
+    const rpc = fakeRpc({
+      // The second slot's authority was moved away: this pool can neither advance nor withdraw it, so
+      // adopting it would promise a refund that cannot happen.
+      nonceAccounts: { ...initialized(addresses[0]!, value(0)), ...initialized(addresses[1]!, value(1), merchant) },
+      nonceRent: NONCE_RENT,
+    });
+    const status = await createPool(rpc, payer, createMemoryStore()).recover();
+    expect(status.slots.map((slot) => slot.index)).toEqual([0]);
+  });
+
+  it('throws rather than persisting an empty pool when the payer has no slots on chain', async () => {
+    const pool = createPool(fakeRpc({ nonceRent: NONCE_RENT }), payer, createMemoryStore());
+    await expectVadumError(() => pool.recover(), 'NONCE_LEDGER_MISSING', { payer });
+  });
+});
+
 describe('estimateSetupCost', () => {
   it('reads rent at call time and prices one signature (D7, D26)', async () => {
     const pool = createPool(fakeRpc({ nonceRent: NONCE_RENT, walletRent: WALLET_RENT }), payer, createMemoryStore());

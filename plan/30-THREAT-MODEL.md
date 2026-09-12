@@ -142,7 +142,15 @@ described as routine does not happen to it.
 | Genuine crash mid-write | The mirror exists for this |
 
 **Mitigation:** RECOVERY state — offline signing is *blocked* until one online session restores pool
-state (`13-RESEARCH-pwa.md`, Stream C task C3). Fail safe, never silent. **Plus a standalone-mode
+state (`13-RESEARCH-pwa.md`, Stream C task C3). Fail safe, never silent.
+
+*Corrected 2026-09-12 (REV-16). "One online session restores pool state" was unimplementable as
+built: every `Pool` method read the ledger before the chain, so the RECOVERY screen's only button
+threw `NONCE_LEDGER_MISSING`, and so did `close` — stranding the refundable deposit. `Pool.recover`
+now rebuilds the slot list from the derived seeds, but what it restores is the **deposit**, not the
+capacity to pay: a recovered slot is `unknown`, because nothing on chain says whether a merchant is
+still holding a payment signed against it. The payer closes the pool and creates a new one. Blocking
+offline signing therefore still holds — it is now a state the payer can actually leave.* **Plus a standalone-mode
 check**: if the app is running in a browser tab rather than as an installed app, offline signing is
 disabled and the user is asked to install first. That is the correct control, and it replaces the
 notification-permission prompt `42-STREAM-C-apps.md` C3 previously mandated — a real permission prompt, on

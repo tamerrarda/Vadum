@@ -33,9 +33,24 @@ test('a marker with no ledger enters RECOVERY and still refuses to sign (C3, che
   await page.addInitScript(AS_INSTALLED + SET_EPOCH_MARKER);
   await page.goto(PAYER_URL);
 
+  // Held, then refused: the app has to stay on its own screen while a request is outstanding, and the
+  // delay is what makes the intermediate state observable instead of transient.
+  await page.route(/api\.devnet\.solana\.com/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.abort();
+  });
+
   await expect(page.getByRole('heading', { name: 'Cannot pay offline — reconnect once to restore' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Restore from the network' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Scan a payment request' })).toHaveCount(0);
+
+  // That button used to be a dead end: every Pool method reads the ledger before the chain, so on the
+  // one device this screen exists for, it could only ever throw NONCE_LEDGER_MISSING. It now falls
+  // through to recovery from the derived addresses, which is a screen that reaches for the network.
+  await page.getByRole('button', { name: 'Restore from the network' }).click();
+  await expect(page.getByRole('heading', { name: 'Looking for your slots…' })).toBeVisible();
+  // And with the network refused, it fails visibly rather than silently doing nothing.
+  await expect(page.getByRole('heading', { name: /could not reach the network|that did not work|no record/i })).toBeVisible({ timeout: 30_000 });
 });
 
 test('a device with no checked token says so, and offers the screen that fixes it', async ({ page }) => {

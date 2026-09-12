@@ -81,7 +81,11 @@ when it is gone. You never keep a second record of spent slots.
   PWA's storage after seven days of disuse. That premise is wrong and retracted.
 - On launch, if the epoch marker says a pool exists but the store holds no pool state, enter
   **RECOVERY** and refuse to sign offline until one online session restores it (`Pool.refresh`, then
-  `Pool.reconcile`).
+  `Pool.reconcile`) — and when the ledger itself is gone, `Pool.recover`, which finds the slots from
+  their derived addresses. *Amended 2026-09-12 (REV-16): `refresh` reads the ledger before the chain,
+  so on a wiped device it threw `NONCE_LEDGER_MISSING` and the screen's only button could never
+  succeed. What recovery returns is the deposit, not the capacity to pay: recovered slots are
+  `unknown`, the payer closes the pool and creates a new one, and the screen says so.*
 
 What still causes loss: use in a browser tab, reinstall or cleared site data, a new device, Android
 storage pressure, a crash mid-write. Fail safe, never silent: "Cannot pay offline — reconnect once to

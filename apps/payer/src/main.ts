@@ -90,6 +90,40 @@ async function restore(app: App): Promise<void> {
     writeEpochMarker(localStorage, status.epoch);
     await home(app);
   } catch (error) {
+    // `refresh` reads the ledger before it reads the chain, so with the ledger gone this is the only
+    // outcome it can have — and it was the outcome of the RECOVERY screen's only button (REV-16).
+    if (error instanceof VadumError && error.code === 'NONCE_LEDGER_MISSING') {
+      await recoverFromChain(app);
+      return;
+    }
+    failed(app, error);
+  }
+}
+
+/**
+ * The ledger is gone, so there is nothing to refresh: the slots are found on chain from their derived
+ * addresses instead. What comes back is the **deposit**, not the ability to pay — a recovered slot has
+ * unknown history, and nothing on chain can say whether a merchant still holds a payment signed
+ * against it. The screen says that in those words rather than implying a full restore.
+ */
+async function recoverFromChain(app: App): Promise<void> {
+  render(text('h1', 'Looking for your slots…'), text('p', 'Reading them from the network by their addresses.'));
+  try {
+    const status = await app.pool.recover();
+    writeEpochMarker(localStorage, status.epoch);
+    render(
+      text('h1', 'Slots found — the deposit, not the payments'),
+      card(
+        row('Slots found', `${status.slots.length}`),
+        text(
+          'p',
+          'These cannot be reused: with the record gone, nothing on the network says whether a merchant is still holding a payment signed against one. Closing them returns the whole deposit, and new slots start clean.',
+          'warn',
+        ),
+      ),
+      card(button('Close slots and get the deposit back', () => closePool(app), { primary: true })),
+    );
+  } catch (error) {
     failed(app, error);
   }
 }
@@ -158,6 +192,11 @@ async function home(app: App): Promise<void> {
     card(button('Scan a payment request', () => scan(app, 'payment'), { primary: true, disabled: status.unspentCount === 0 || tokenCount === 0 })),
     card(button('Scan a recovery code', () => scan(app, 'recovery'))),
     card(button(tokenCount === 0 ? 'Check a token' : `Tokens (${tokenCount})`, () => tokens(app))),
+    // Every slot unknown means the pool was closed or recovered: without this the payer would sit on a
+    // dead pool with no way back, because boot only offers onboarding when there is no pool record.
+    status.slots.every((slot) => slot.state === 'unknown')
+      ? card(button('Create new slots', () => onboarding(app), { primary: true }))
+      : element('div', {}, []),
     card(button('Refresh from the network', () => restore(app)), button('Close slots and get the deposit back', () => closePool(app))),
   );
 }

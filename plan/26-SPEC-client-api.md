@@ -248,6 +248,14 @@ export interface Pool {
   applyNonceReturn(payload: NonceReturnPayload): Promise<PoolStatus>;
   /** Online. Re-reads every slot's on-chain value. Never changes slot state. */
   refresh(): Promise<PoolStatus>;
+  /**
+   * Online. Rebuilds a lost ledger from the chain, probing the derived seeds (default 16). Every
+   * recovered slot is 'unknown' — the chain cannot say whether a merchant still holds a payment
+   * signed against it — so the pool can be closed but never spent from. Accounts whose authority is
+   * no longer this payer are skipped. Throws NONCE_LEDGER_MISSING when nothing is found.
+   * Added 2026-09-12 (REV-16): without it, RECOVERY had no exit and the deposit was unrecoverable.
+   */
+  recover(maxProbe?: number): Promise<PoolStatus>;
   /** Online. withdrawNonceAccount on every slot; rent returns to the payer. */
   close(payerKey: CryptoKeyPair): Promise<{ refundedLamports: bigint }>;
   /**
@@ -266,6 +274,13 @@ export interface Pool {
 
 export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore): Pool;
 ```
+
+`recover` is what makes T4's mitigation true. Every other method reads the ledger first, so with the
+ledger gone the RECOVERY screen's "Restore from the network" button could only ever throw
+`NONCE_LEDGER_MISSING` — and `close` with it, which left the refundable deposit D26 advertises
+permanently stranded. Recovery is possible at all only because the slot addresses derive from the payer
+and consecutive seeds (D14), so they need no local record to be found. What it restores is the deposit,
+not the capacity: a recovered slot is `unknown`, and the payer closes the pool and creates a new one.
 
 `reconcile` is the missing piece `WIRE-8` was opened for: because the payer marks a slot spent before
 signing, a merchant who never submits would otherwise drain the payer's offline capacity permanently.
