@@ -58,6 +58,16 @@ answered with evidence.
 | 51 | `51-DEMO-SCRIPT.md` | The two-phone airplane-mode video |
 | 60 | `60-PHASE0-derisk.md` | The live-chain proof that must pass before spec freeze |
 
+### Evidence — `plan/references/`
+
+Written by the runs themselves, not by hand. Cite these rather than restating their numbers:
+
+| File | What it records |
+|---|---|
+| `phase0-log.md` | Phase 0 on devnet: the offline-signed payment that settled, the different payment against the consumed nonce that never landed, the execution failure and its fee, the fabricated nonce |
+| `stream-b-devnet-log.md` | Stream B's B6–B10 clauses on devnet through `core`, `wire` and `client` — live mint verdicts, pool lifecycle, and the three submission failure classes |
+| `integration-tests.md` | Gate G3 and the device-free scenarios, with the run that produced them and what the three reviewer-facing tests assert |
+
 ---
 
 ## Execution order
@@ -92,3 +102,10 @@ answered with evidence.
 **Phase 0 is not optional.** If its assertions do not pass, no amount of planning downstream is worth
 anything. It gates spec freeze and the three streams — not the fixture generator, which needs no chain
 and runs alongside it.
+
+### Where it got to
+
+Phase 0 passed, spec freeze is tagged, and **all three streams are merged**: `core`, `wire`, `client`,
+both PWAs and `packages/integration`. Gates G0–G3 are green; G4 and G6 need two phones, and G5's
+assertion is satisfied from Node but not yet from a handset. What is left is in
+`02-OPEN-QUESTIONS.md` — WIRE-6 above all, because nothing measures anything until the method exists.
