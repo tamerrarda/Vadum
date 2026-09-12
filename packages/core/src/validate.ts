@@ -10,7 +10,7 @@ import type { CanonicalInput, MintBlocker, MintRecord, MintWarning, RawMintData 
 
 // ─── mint compatibility (11-RESEARCH-tokens.md TOK-3, D22) ─────────────────────────────────────────
 
-const BLOCKER_ORDER: readonly MintBlocker[] = ['transfer-hook-active', 'transfer-fee-nonzero', 'default-account-state-frozen'];
+const BLOCKER_ORDER: readonly MintBlocker[] = ['transfer-hook-active', 'transfer-fee-nonzero', 'default-account-state-frozen', 'non-transferable'];
 const WARNING_ORDER: readonly MintWarning[] = [
   'permanent-delegate',
   'pausable',
@@ -54,6 +54,11 @@ export function evaluateMint(raw: RawMintData, checkedAt: number): MintRecord {
         // The newer fee takes effect at an epoch an offline device cannot see, so either one counts.
         if (feeBasisPoints(state.olderTransferFee) > 0 || feeBasisPoints(state.newerTransferFee) > 0) blockers.add('transfer-fee-nonzero');
         if (state.transferFeeConfigAuthority !== null) mutable = true;
+        break;
+      case 'nonTransferable':
+        // Every transfer from such a mint fails at execution, which charges the merchant a fee and
+        // burns the payer's slot (SOL-7). A warning would let that happen once per mint.
+        blockers.add('non-transferable');
         break;
       case 'defaultAccountState':
         if (state.accountState !== 'initialized') blockers.add('default-account-state-frozen');

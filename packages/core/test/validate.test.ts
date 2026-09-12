@@ -110,6 +110,7 @@ describe('evaluateMint', () => {
     ],
     ['an unreadable transfer fee', { extension: 'transferFeeConfig', state: { transferFeeConfigAuthority: null } }, 'transfer-fee-nonzero'],
     ['frozen-by-default accounts', { extension: 'defaultAccountState', state: { accountState: 'frozen' } }, 'default-account-state-frozen'],
+    ['a non-transferable mint', { extension: 'nonTransferable', state: {} }, 'non-transferable'],
   ] as const)('blocks %s', (_label, extension, blocker) => {
     const record = evaluateMint(withExtension(USDG, extension as RawMintExtension), 0);
     expect(record.compatible).toBe(false);
@@ -117,7 +118,7 @@ describe('evaluateMint', () => {
   });
 
   it('warns on an extension it does not recognise, never silently passes', () => {
-    expect(evaluateMint(withExtension(USDC, { extension: 'nonTransferable', state: {} }), 0).warnings).toContain('unknown-extension');
+    expect(evaluateMint(withExtension(USDC, { extension: 'interestBearingConfig', state: {} }), 0).warnings).toContain('unknown-extension');
   });
 
   it('marks a mint immutable when every transfer-relevant authority is null', () => {
