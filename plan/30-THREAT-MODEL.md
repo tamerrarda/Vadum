@@ -283,6 +283,28 @@ outright, which would have limited offline payment to 24 hours after last being 
 Both mints also carry `permanentDelegate` — the issuer can move funds after settlement. Not our
 threat, but it belongs in the docs.
 
+### T12 · Theft of an unlocked device — NEW, and it was missing entirely
+
+Added 2026-09-12, after an adviser noticed that every cap in the system protects a *merchant* and
+nothing bounded what a **payer's device** would sign.
+
+Whoever holds an unlocked, installed payer app can pay with it. They do not need the payer's keys, a
+network, or any skill: they run the merchant app on their own phone, show a request for whatever amount
+they like, and scan the `AUTH`. `31-PARAMETERS.md` named a *biometric* above the confirmation threshold
+as the control, which a PWA cannot provide offline — WebAuthn needs a credential enrolled while online
+and iOS exposes no local-auth prompt to web apps — and the app's actual behaviour, asking for the amount
+to be typed again, defends against this not at all: a thief types it.
+
+**Mitigation, and the honest bound.** A **payer per-payment cap** (20, `31-PARAMETERS.md`), refused in
+the confirmation screen before anything is signed. Exposure is then the cap once per unspent slot —
+**100 base units at N=5** — until the payer reconnects, rather than the whole token balance. The device
+lock screen remains the only thing standing between a thief and that bound, and the README says so.
+
+What this deliberately does **not** claim: no hardware backing, no proof of who is holding the phone.
+A local-auth prompt over a key that lives in IndexedDB — or, on the polyfill path, in the JavaScript
+heap (APP-2) — would look like hardware backing without being it, which is the kind of over-claiming
+D21 and the T1 correction exist to stamp out.
+
 ---
 
 ---

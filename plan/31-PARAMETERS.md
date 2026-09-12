@@ -26,7 +26,7 @@ EMV has managed this identical risk for forty years and its vocabulary maps clea
 | **Cumulative offline amount** counter | Merchant queue exposure cap | Merchant app |
 | **Consecutive offline transactions** counter | Nonce pool size N | **Payer app only** |
 | **Online authorisation** above the floor limit | The T0/T1 nonce pre-check (D21) | RPC, before handover |
-| CVM limit | Payer-side confirmation step (PIN / biometric above a threshold) | Payer app |
+| CVM limit | Payer-side amount re-entry above a threshold, **plus a per-payment cap** | Payer app. The mapping is weaker than EMV's: a card's CVM proves who is holding it, and nothing a PWA can do offline proves that (T12) |
 
 ### The third row used to claim more than it could deliver
 
@@ -81,7 +81,8 @@ the current framing: the risk discussion is entirely about T1 and T2, which are 
 | **Nonce pool size N** | **5** | — | Five payments is a plausible offline stretch, and the rent is 5 × one nonce account's rent, refundable — **about 0.0066 SOL on mainnet in September 2026** and falling (D39), plus the wallet floor at setup (D38). **Not a security parameter** — see below |
 | **Send window (product TTL)** | **24 h** | — | Merchant must submit or void within this; it also gates the payer's `NONCE_DESYNC` reconciliation. Honest caveat below |
 | **Mint compatibility cache TTL** | **24 h**, mutable mints only | — | D22: an immutable mint such as USDC never goes stale. For USDG/PYUSD the TTL **warns and caps**, it does not hard-block |
-| **Payer confirmation threshold** | **10** | `10_000_000` | Above this the payer app requires device biometric before signing |
+| **Payer amount re-entry threshold** | **10** | `10_000_000` | Above this the payer app requires the amount to be **typed again** before signing. Revised 2026-09-12: the row said "device biometric", which a PWA cannot provide offline — WebAuthn needs a credential enrolled online and iOS exposes no local-auth prompt to web apps. Re-entry defends against payer error, which is real; it defends against a thief holding an unlocked phone not at all, and the row previously implied otherwise |
+| **Payer per-payment cap** | **20** | `20_000_000` | The largest single payment this device will sign offline, added 2026-09-12. It is the only cap on the payer's side — every other one protects a merchant — and it is what bounds theft of an unlocked phone (**T12**): the cap once per unspent slot, so 100 base units at N=5, not the whole balance. Set equal to the T1 receipt cap so it never refuses a sale a merchant could have accepted |
 | **Pool low-water mark** | **2** remaining | — | Prompt the payer to reconnect and refresh |
 
 ### Four honest caveats that belong in the application

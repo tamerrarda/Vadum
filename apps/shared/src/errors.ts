@@ -220,6 +220,12 @@ export const STATE_COPY = {
     side: 'payer',
     action: 'install',
   },
+  'above-payer-cap': {
+    title: 'Too large to pay offline',
+    body: 'This device will not sign a single offline payment above its limit. The limit exists because anyone holding an unlocked phone can pay with it — reconnect and pay online instead.',
+    side: 'payer',
+    action: 'reconnect',
+  },
 } as const satisfies Readonly<Record<string, FailureCopy>>;
 
 const USER_FACING = (code: VadumErrorCode): code is UserFacingCode => !code.startsWith('INTERNAL_');

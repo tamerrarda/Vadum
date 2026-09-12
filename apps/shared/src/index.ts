@@ -4,6 +4,7 @@
 export { copyFor, FAILURE_COPY, STATE_COPY, USER_FACING_CODES, type FailureCopy, type UserFacingCode } from './errors.ts';
 export { button, card, element, mount, qrImage, render, row, STYLES, text } from './ui.ts';
 export { formatAmount, formatSol, parseAmount, shortAddress } from './format.ts';
+export { needsRetype, PAYER_PER_PAYMENT_CAP, PAYER_RETYPE_THRESHOLD, theftExposure, withinPayerCap } from './limits.ts';
 export { detectSigningPath, ensureSigningPath, hasIdentity, loadOrCreateIdentity, type Identity, type SigningPath } from './keys.ts';
 export { canSignOffline, displayEnvironment, isStandalone, signingBlock, type DisplayEnvironment, type SigningBlock } from './standalone.ts';
 export {
