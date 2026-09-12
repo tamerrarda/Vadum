@@ -20,8 +20,10 @@ export interface FakeChain extends VadumRpc {
   close(payer: Address, index: number): Promise<void>;
   readonly submitted: { readonly wireTransaction: Uint8Array; readonly lifetime: PaymentLifetime }[];
   readonly setups: { readonly instructions: readonly Instruction[]; readonly feePayerKey: CryptoKeyPair }[];
-  /** Set to reject the next submission with this error, for the failure classes. */
+  /** Set to reject the next submission with this error, for a single failure. */
   failNext: Error | null;
+  /** Set to reject every submission, for the consecutive-failure counter (D21, D23). */
+  failAlways: Error | null;
   balances: Map<Address, bigint>;
   tokenBalances: Map<Address, bigint>;
 }
@@ -37,6 +39,7 @@ export function createFakeChain(options: { readonly mint?: RawMintData } = {}): 
     submitted,
     setups,
     failNext: null,
+    failAlways: null,
     balances: new Map(),
     tokenBalances: new Map(),
 
@@ -80,6 +83,7 @@ export function createFakeChain(options: { readonly mint?: RawMintData } = {}): 
       return `setup-${setups.length}`;
     },
     async sendPayment(wireTransaction, lifetime) {
+      if (chain.failAlways !== null) throw chain.failAlways;
       const failure = chain.failNext;
       if (failure !== null) {
         chain.failNext = null;

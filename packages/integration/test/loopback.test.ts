@@ -7,18 +7,10 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { createRequire } from 'node:module';
-import { createKeyPairFromPrivateKeyBytes, getAddressFromPublicKey, getBase64Encoder, type Address, type Nonce } from '@solana/kit';
-import {
-  createMemoryStore,
-  createPool,
-  createQueue,
-  DEFAULT_QUEUE_LIMITS,
-  precheckNonce,
-  submit,
-  type Pool,
-} from '@vadum/client';
-import { buildMessage, deriveAta, signAsPayer, signNonceReturn, verifyAuth, type Intent, type MintRecord } from '@vadum/core';
-import { fixtures, MERCHANT_SEED, NONCE_VALUE, PAYER_SEED } from '@vadum/fixtures';
+import { getAddressFromPublicKey, getBase64Encoder, type Address, type Nonce } from '@solana/kit';
+import { precheckNonce } from '@vadum/client';
+import { buildMessage, deriveAta, signAsPayer, signNonceReturn, verifyAuth } from '@vadum/core';
+import { fixtures } from '@vadum/fixtures';
 import {
   decodeAuth,
   decodeIntent,
@@ -32,41 +24,16 @@ import {
   renderQr,
 } from '@vadum/wire';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createFakeChain, nextValue } from './fake-chain.ts';
+import { nextValue } from './fake-chain.ts';
+import { AMOUNT, intentFor, MINT, mintCache, twoDevices } from './devices.ts';
 
 const PNG_PREFIX = 'data:image/png;base64,';
-const AMOUNT = 2_500_000n;
-const POOL_SIZE = 5;
 
 const fromBase64 = (value: string): Uint8Array => new Uint8Array(getBase64Encoder().encode(value));
 
 const pngOf = (dataUrl: string): Blob => {
   const bytes = fromBase64(dataUrl.slice(PNG_PREFIX.length));
   return new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer], { type: 'image/png' });
-};
-
-/** The committed mint records, as the payer's offline cache (receive rules 4 and 5). */
-const mintCache: ReadonlyMap<Address, MintRecord> = new Map(
-  fixtures.mintRecords.map((record) => [
-    record.mint as Address,
-    {
-      mint: record.mint as Address,
-      tokenProgram: record.tokenProgram,
-      decimals: record.decimals,
-      compatible: record.compatible,
-      blockers: record.blockers as MintRecord['blockers'],
-      warnings: record.warnings as MintRecord['warnings'],
-      mutable: record.mutable,
-      checkedAt: record.checkedAt,
-    },
-  ]),
-);
-
-const MINT = fixtures.mints.spl.address as Address;
-const slotValue = (index: number): Nonce => {
-  let value = NONCE_VALUE as Nonce;
-  for (let step = 0; step < index; step++) value = nextValue(value);
-  return value;
 };
 
 let server: Server;
@@ -86,38 +53,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await new Promise<void>((resolve, reject) => server.close((error) => (error === undefined ? resolve() : reject(error))));
-});
-
-/** Everything the two devices are, minus the screens. */
-async function twoDevices() {
-  const payerKey = await createKeyPairFromPrivateKeyBytes(PAYER_SEED);
-  const merchantKey = await createKeyPairFromPrivateKeyBytes(MERCHANT_SEED);
-  const payer = await getAddressFromPublicKey(payerKey.publicKey);
-  const merchant = await getAddressFromPublicKey(merchantKey.publicKey);
-
-  const chain = createFakeChain();
-  await chain.seedPool(payer, POOL_SIZE, slotValue);
-  chain.balances.set(payer, NONCE_RENT_TOTAL);
-
-  const payerStore = createMemoryStore();
-  const pool = createPool(chain, payer, payerStore);
-  await pool.create(POOL_SIZE, payerKey);
-  const queue = createQueue(chain, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
-  return { chain, payerKey, merchantKey, payer, merchant, pool, queue, payerStore };
-}
-
-const NONCE_RENT_TOTAL = 1_056_640n * BigInt(POOL_SIZE) + 5_000n + 890_880n;
-
-const intentFor = (merchant: Address, amount: bigint): Intent => ({
-  merchant,
-  mint: MINT,
-  decimals: 6,
-  amount,
-  lifetime: { kind: 'nonce' },
-  includeCreateAta: false,
-  tokenProgram: 'spl-token',
-  feePayer: merchant,
-  isStatic: false,
 });
 
 describe('G3 · loopback', () => {
@@ -215,6 +150,3 @@ describe('G3 · loopback', () => {
     expect(Buffer.from(messageBytes).toString('base64')).toBe(fixture.expected.messageBytes);
   });
 });
-
-/** Exported for the scenario tests, which need the same two devices. */
-export { intentFor, mintCache, twoDevices, type Pool };
