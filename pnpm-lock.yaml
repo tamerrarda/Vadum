@@ -68,6 +68,9 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.63.0
+      '@solana/kit':
+        specifier: 'catalog:'
+        version: 8.0.0(typescript@7.0.2)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.4

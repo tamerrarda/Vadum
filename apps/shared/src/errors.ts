@@ -220,6 +220,12 @@ export const STATE_COPY = {
     side: 'payer',
     action: 'install',
   },
+  'no-tokens': {
+    title: 'Check a token before you go offline',
+    body: 'This device can only pay with a token it has checked online at least once — that check is what makes the payment verifiable with no connection. Add the token your merchant uses while you still have one.',
+    side: 'payer',
+    action: 'reconnect',
+  },
   'above-payer-cap': {
     title: 'Too large to pay offline',
     body: 'This device will not sign a single offline payment above its limit. The limit exists because anyone holding an unlocked phone can pay with it — reconnect and pay online instead.',

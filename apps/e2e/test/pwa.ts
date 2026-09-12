@@ -31,8 +31,11 @@ export const AS_INSTALLED = `
       : realMatchMedia(query);
 `;
 
-/** The epoch marker without any pool ledger: `assessLedger` calls that RECOVERY (C3, checklist 10). */
-export const MARKER_WITHOUT_LEDGER = `localStorage.setItem('vadum:pool-epoch', 'e2e-epoch');`;
+/**
+ * Writes the epoch marker. With no `pool:<payer>` record beside it, `assessLedger` calls that RECOVERY
+ * (C3, checklist step 10); with one, the app reaches its home screen.
+ */
+export const SET_EPOCH_MARKER = `localStorage.setItem('vadum:pool-epoch', 'e2e-epoch');`;
 
 /**
  * Writes records into the apps' own IndexedDB (`vadum` / `kv`, as `apps/shared/src/store.ts` opens
@@ -57,6 +60,42 @@ export async function seedStore(records: readonly (readonly [string, unknown])[]
   });
   database.close();
 }
+
+/**
+ * Reads back the device identity's **public** key. The private half is generated non-extractable
+ * (`apps/shared/src/keys.ts`) and stays that way; the public half exports fine, and its 32 bytes are
+ * the payer address every `pool:<payer>` key is named after. Without this a test cannot seed a pool
+ * ledger, because the address is generated in the browser and shown only in truncated form.
+ */
+export async function exportIdentityPublicKey(): Promise<readonly number[] | null> {
+  const database = await new Promise<IDBDatabase>((resolve, reject) => {
+    const opening = indexedDB.open('vadum', 1);
+    opening.onupgradeneeded = () => {
+      if (!opening.result.objectStoreNames.contains('kv')) opening.result.createObjectStore('kv');
+    };
+    opening.onsuccess = () => resolve(opening.result);
+    opening.onerror = () => reject(opening.error);
+  });
+  const pair = await new Promise<CryptoKeyPair | undefined>((resolve, reject) => {
+    const request = database.transaction('kv', 'readonly').objectStore('kv').get('identity:keypair');
+    request.onsuccess = () => resolve(request.result as CryptoKeyPair | undefined);
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  if (pair?.publicKey === undefined) return null;
+  return [...new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey))];
+}
+
+/**
+ * A pool ledger in the shape `client/pool.ts` persists. Slot addresses are the payer's own, which is
+ * never read: nothing in these tests goes on chain, and an offline home screen only counts states.
+ */
+export const poolLedger = (payer: string, size = 5) => ({
+  payer,
+  size,
+  epoch: 'e2e-epoch',
+  slots: Array.from({ length: size }, (_unused, index) => ({ index, address: payer, value: null, state: 'unspent' })),
+});
 
 /** A devnet-shaped address. Never contacted: every test here runs with no network at all. */
 export const MINT_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
