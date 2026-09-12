@@ -32,11 +32,14 @@ jobs:
         run: pnpm check:test-keys
       - name: core source-size budget (20-ARCHITECTURE)
         run: pnpm check:core-size
-
-  gate-g1:
-    # Gate G1 (plan/50-INTEGRATION.md, D34): Stream A may not merge into main with a stub body left.
-    if: github.event_name == 'pull_request' && github.head_ref == 'stream/core'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - run: node scripts/check-no-stubs.mjs
+      # Gate G1 (plan/50-INTEGRATION.md, D34) used to run in a job gated on a pull request from
+      # `stream/core`. That branch merged and will not exist again, so the check ran nowhere. It now
+      # runs on every push, which is what the gate was for.
+      - name: No stub bodies left in packages/core/src (gate G1, D34)
+        run: pnpm check:no-stubs
+      # Neither app was built in CI, so a broken Vite build — or a scanner .wasm that stops landing in
+      # precache-manifest.json — passed silently. That manifest is what makes D10's "same-origin and
+      # precached" true, and scripts/build-precache.mjs fails the build when the .wasm or index.html is
+      # missing from it.
+      - name: Both PWAs build, and the scanner .wasm lands in the precache manifest (C1, D10)
+        run: pnpm build
