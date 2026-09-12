@@ -196,3 +196,56 @@ Stream 0's bootstrap, CI and fixture generator are done, and **Phase 0 passed on
 nonce never landed and cost nothing; the execution failure, the fabricated nonce and the create-ATA
 branch behaved as the error taxonomy assumes. No blocking `OPEN` remains in this file — WIRE-6, OPS-7
 and NONCE-9 are non-blocking. **Tagging spec freeze (task 0.6) is the owner's call.**
+
+---
+
+## Found by Streams A, B and C — 2026-09-12
+
+All three streams are merged on `main` — A `9c8daf3`, B `7b9c9a8`, C `f1f1682`, with the integration
+scenarios in `57aefbf`. Each stream appended to `plan/questions/stream-{a,b,c}.md` while it ran; this
+section is the reconciliation `50-INTEGRATION.md` asks for at integration. Nothing below changed a
+frozen signature.
+
+### Closed by the code that found them
+
+| ID | Finding | Closed by |
+|---|---|---|
+| A-2 | `22-SPEC` derived `MintRecord.mutable` from "the defaultAccountState authority", which that extension does not have | `evaluateMint` uses the mint's **freeze authority**, since that is what changes the default state |
+| A-3, A-4 | `confidentialTransferFeeConfig` was in no table, and `transferFeeConfig` carries two fees whose epoch an offline device cannot know | Both confidential extensions warn rather than block; **either** non-zero fee blocks, and an unreadable one blocks too |
+| A-6, A-7 | Programmatic misuse had no codes: a key that is not the payer, an amount outside u64, decimals outside u8, a disagreeing `expectedAmount`, an `Auth` carrying an amount on a dynamic intent | `CANON_ACCOUNT_MISMATCH` / `CANON_AMOUNT_MISMATCH` / `MINT_DECIMALS_MISMATCH`, each with a `reason`. A second amount is refused, never ignored |
+| B-3 | `status()`, `get()` and `list()` are synchronous while `KeyValueStore` is not | `Pool`, `Queue` and `MintCache` each gained `load()`; `Pool.status()` throws `NONCE_LEDGER_MISSING` before it |
+| B-5 | `decodeAuth` needs `DecodeContext.intentFlags` for rule 6, and the spec did not say what happens without it | `WIRE_FLAGS_MISMATCH`. It fails closed: comparing the payload's flags with themselves checks nothing |
+| B-10, B-11 | `Queue.accept`'s five rules had no order, and `drain` no eligibility rule | Dedupe → the T1 pre-check → the failed-send counter → the receipt cap → the exposure cap; `queued` and `failed` are retried, nothing else |
+| B-12 | `queueExposureCap` is written as the **T2** counter but the queue sees all three tiers | Exposure counts unsettled T1 and T2 only. A T0 sale hands over after settlement, so it is not exposure |
+| B-15, B-16, B-17 | The devnet run died twice on the public endpoint: `WebSocket failed to connect`, then `HTTP error (429)` | Setup confirms over HTTP polling; every read and the broadcast retry with backoff; and a payment whose confirmation channel will not open falls back to broadcast-and-poll. kit's confirmer stays the primary path (SOL-15) |
+| C-1 | C0.5's fixture-backed fakes | Skipped: all three packages are implemented, so `apps/shared` holds the real runtime. "Do not ship a fake" is easiest to honour by never writing one |
+| C-2 | No service-worker tooling is in the catalog, and adding a dependency needs a decision record | A hand-written worker plus `scripts/build-precache.mjs`, which turns Vite's manifest into the precache list — so the `zxing` `.wasm` is in it by construction (D10) |
+| C-4 | The eleven integration tests of `50-INTEGRATION.md` cross every package and belonged to none | `packages/integration`. Gate G3 and the device-free scenarios live there; output in `plan/references/integration-tests.md` |
+| C-6 | C3 did not say what a ledger **without** an epoch marker means | Both mismatches are RECOVERY. Only "both present" signs; "neither" is onboarding |
+
+### Newly opened — owner calls, none blocking
+
+| ID | Question | Why it matters | Status |
+|---|---|---|---|
+| A-1 | Should a **non-transferable** mint (`nonTransferable`) be a `MintBlocker` rather than an `unknown-extension` warning? | Every payment from such a mint fails at execution: the merchant pays the fee and the payer's slot is burned. Today the mint only warns | 🟡 OPEN — one member on `MintBlocker` and one branch in `evaluateMint`. Same question for `pausableConfig` with `paused: true` |
+| B-1 | `26-SPEC`'s `VadumRpc` has no send surface, but `Pool.create`, `Pool.close` and `submit` must send | The code added `sendSetup` and `sendPayment`; the spec should record them, or name a different seam | 🟡 OPEN — spec text, not behaviour |
+| B-2 | `SubmitOutcome.newNonceValue` is typed `Nonce` and is unfillable on the fresh path | Widened to `Nonce \| null` in code | 🟡 OPEN — spec text |
+| B-18 | D38 covers funding a pool but not **closing** one. A fee payer must stay rent-exempt *after* its fee is deducted, and the withdrawal's credit does not count — so a payer left exactly at the floor cannot close its own pool. Devnet refused it | `Pool.close` now raises `NONCE_POOL_UNDERFUNDED` with that reason, and `estimateSetupCost` documents funding `walletMinimum + fee`. D38 itself should say it | 🟡 OPEN — decision text; behaviour is shipped and verified |
+| C-7 | C4 requires a **device biometric** above the confirmation threshold (10, `31-PARAMETERS.md`). A PWA has no offline local-authentication API: WebAuthn needs a credential enrolled online, and iOS exposes no local-auth prompt to web apps | Above the threshold the payer retypes the amount — a second look, not an identity check, and the app does not call it biometric | 🟡 OPEN — narrow the parameter, or accept the limitation |
+| C-8 | Both manifests ship a placeholder icon | Installability works; the mark is not the product's | 🟡 OPEN — owner asset, before filming |
+| — | The confirm-only rows in `plan/questions/stream-{a,b,c}.md` | Each records a reading the code took where the spec was silent. None changes behaviour if confirmed | 🟡 OPEN — a read-through, not a decision each |
+
+### Gates — state on 2026-09-12
+
+| Gate | State |
+|---|---|
+| G0 · Spec freeze | ✅ tag `spec-freeze`, Phase 0 log committed |
+| G1 · Core green | ✅ every core fixture and property test; no `INTERNAL_NOT_IMPLEMENTED` in `packages/core/src` |
+| G2 · Wire green | ✅ all 21 codec negatives in check order, all 3 client negatives, every fixture round-trips |
+| G3 · Loopback | ✅ `packages/integration` — the full path including a real scanner read, no network, no camera |
+| G4 · Two-device offline | ⬜ needs two phones and `apps/AIRPLANE-MODE-CHECKLIST.md` |
+| G5 · Settlement | 🟡 the assertion is satisfied **from Node**: `tools/devnet-b` step 6 settles a payment on devnet through `core`, `wire` and `client`. The gate as written follows G4, so it is not closed until the payment comes off a phone |
+| G6 · Recovery | 🟡 all three submission failure classes, the nonce return and reconciliation are produced on devnet (`plan/references/stream-b-devnet-log.md`, steps 7–13) and in CI (`plan/references/integration-tests.md`). The storage-wipe half needs a device |
+
+`wire/measure.ts` (B5) is still unwritten and still blocked on **WIRE-6**, which is the last item
+standing between the repository and the measurement deliverable.

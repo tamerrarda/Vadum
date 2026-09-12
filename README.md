@@ -35,8 +35,8 @@ program of its own.
 |---|---|---|
 | The primitive works on a live chain: a payment signed and verified entirely offline settles, and a second payment against the same nonce cannot | Phase 0, 17 steps on devnet | `plan/references/phase0-log.md` |
 | The libraries settle real payments, and the three submission failure classes are three distinct observable events | `pnpm devnet:b`, 13 steps on devnet through `core`, `wire` and `client` | `plan/references/stream-b-devnet-log.md` |
-| The whole air gap works without devices: reserve, sign, encode, render a QR, **read it back through the scanner**, decode, verify, settle, recover the slot | Gate G3, in one process with no network and no camera | `packages/integration/test/loopback.test.ts` |
-| The race, the execution failure, the fabricated nonce, the duplicate `AUTH`, eviction, reconciliation, the mint block and every cap behave as specified | The integration scenarios of `plan/50-INTEGRATION.md` | `packages/integration/test/scenarios.test.ts` |
+| The whole air gap works without devices: reserve, sign, encode, render a QR, **read it back through the scanner**, decode, verify, settle, recover the slot | Gate G3, in one process with no network and no camera | `packages/integration/test/loopback.test.ts`, output in `plan/references/integration-tests.md` |
+| The race, the execution failure, the fabricated nonce, the duplicate `AUTH`, eviction, reconciliation, the mint block and every cap behave as specified | The integration scenarios of `plan/50-INTEGRATION.md` | `packages/integration/test/scenarios.test.ts`, output and what the three key ones assert in `plan/references/integration-tests.md` |
 | Every byte on the wire matches an independently generated reference | Golden fixtures, regenerated and compared in CI (D33) | `packages/fixtures/fixtures.json` |
 | Every user-facing error code has copy, and the unreassuring ones stay unreassuring | A test that fails if a code has none | `apps/shared/test/errors.test.ts` |
 
