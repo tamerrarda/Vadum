@@ -82,6 +82,7 @@ which is what "mint-agnostic" should have meant in the first place.
 | `metadataPointer`, `tokenMetadata` | No effect on transfer construction | **ALLOW** |
 | `mintCloseAuthority` | Does not break construction, but it is a **live authority** — on USDG and PYUSD it points at the same Paxos address (`2apBGMsS…`) as every other authority on those mints | **WARN** |
 | `pausable` (if present) | Transfers can be halted; does not break construction | **WARN** |
+| `nonTransferable` | Every transfer fails at execution, so the payment lands, fails, charges the merchant a fee and burns the payer's slot (SOL-7). Added 2026-09-12 after Stream A found it had no verdict here | **HARD BLOCK** |
 
 ### Freeze authority — missing from the table above, and it has a real failure mode
 

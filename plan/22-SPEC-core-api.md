@@ -117,7 +117,10 @@ export interface VerifiedPayment {
 export type MintBlocker =
   | 'transfer-hook-active'
   | 'transfer-fee-nonzero'
-  | 'default-account-state-frozen';
+  | 'default-account-state-frozen'
+  /** Every transfer fails at execution, so a payment against such a mint charges the merchant a
+   *  fee and burns the payer's slot (SOL-7). Added 2026-09-12, A-1. */
+  | 'non-transferable';
 
 export type MintWarning =
   | 'permanent-delegate'
