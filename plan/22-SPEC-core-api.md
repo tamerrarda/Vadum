@@ -120,7 +120,15 @@ export type MintBlocker =
   | 'default-account-state-frozen'
   /** Every transfer fails at execution, so a payment against such a mint charges the merchant a
    *  fee and burns the payer's slot (SOL-7). Added 2026-09-12, A-1. */
-  | 'non-transferable';
+  | 'non-transferable'
+  /**
+   * `pausableConfig` observed with `paused: true`. Added 2026-09-12: recoverable, unlike the four
+   * above — one `MintCache.refresh` clears it — and raised only on an observation. A pause state that
+   * cannot be read warns instead, because a pause can be lifted and a jsonParsed shape change must
+   * not take every pausable mint offline. Presence of the extension also sets `mutable`, which is what
+   * gives the record an expiry under D22.
+   */
+  | 'paused';
 
 export type MintWarning =
   | 'permanent-delegate'

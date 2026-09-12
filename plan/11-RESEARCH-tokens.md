@@ -81,7 +81,7 @@ which is what "mint-agnostic" should have meant in the first place.
 | `confidentialTransferMint` | Only matters if confidential transfer is *used*; plain `transferChecked` is unaffected | **ALLOW** |
 | `metadataPointer`, `tokenMetadata` | No effect on transfer construction | **ALLOW** |
 | `mintCloseAuthority` | Does not break construction, but it is a **live authority** — on USDG and PYUSD it points at the same Paxos address (`2apBGMsS…`) as every other authority on those mints | **WARN** |
-| `pausable` (if present) | Transfers can be halted; does not break construction | **WARN** |
+| `pausable` (if present) | Transfers can be halted; does not break construction | **WARN**, and **HARD BLOCK while observed `paused: true`** (2026-09-12). A pause is an observation and every transfer fails at execution while it holds, charging the merchant (SOL-7); it is also recoverable, so one `refresh` clears the block, and an unreadable pause state warns rather than blocks. Presence sets `mutable`, so the record expires under D22 — the pause is the most time-varying property in this table and must not be cached forever |
 | `nonTransferable` | Every transfer fails at execution, so the payment lands, fails, charges the merchant a fee and burns the payer's slot (SOL-7). Added 2026-09-12 after Stream A found it had no verdict here | **HARD BLOCK** |
 
 ### Freeze authority — missing from the table above, and it has a real failure mode

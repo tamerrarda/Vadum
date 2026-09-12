@@ -10,7 +10,7 @@ import type { CanonicalInput, MintBlocker, MintRecord, MintWarning, RawMintData 
 
 // ─── mint compatibility (11-RESEARCH-tokens.md TOK-3, D22) ─────────────────────────────────────────
 
-const BLOCKER_ORDER: readonly MintBlocker[] = ['transfer-hook-active', 'transfer-fee-nonzero', 'default-account-state-frozen', 'non-transferable'];
+const BLOCKER_ORDER: readonly MintBlocker[] = ['transfer-hook-active', 'transfer-fee-nonzero', 'default-account-state-frozen', 'non-transferable', 'paused'];
 const WARNING_ORDER: readonly MintWarning[] = [
   'permanent-delegate',
   'pausable',
@@ -70,6 +70,15 @@ export function evaluateMint(raw: RawMintData, checkedAt: number): MintRecord {
         break;
       case 'pausableConfig':
         warnings.add('pausable');
+        // A pause is an observation, not a guess: while it holds, every transfer fails at execution
+        // and the merchant pays the fee (SOL-7). Unlike a transfer fee, an unreadable field does NOT
+        // fail safe into a block — a pause can be lifted, and a jsonParsed spelling change must not
+        // take every pausable mint offline on a library bump. It warns instead, and the pause state is
+        // re-read online. No live mint carried this extension when it was written (2026-09-12).
+        if (state.paused === true) blockers.add('paused');
+        // The most time-varying property in TOK-3 cannot be cached forever: `mutable` is what gives it
+        // an expiry under D22, and without it a pausable mint with null authorities never went stale.
+        mutable = true;
         break;
       case 'confidentialTransferMint':
       case 'confidentialTransferFeeConfig':
