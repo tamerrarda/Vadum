@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "pnpm -r run typecheck",
     "test": "vitest run",
+    "build": "pnpm -r --if-present run build",
     "fixtures:generate": "node packages/fixtures/src/generate.ts",
     "fixtures:check": "node packages/fixtures/src/generate.ts --check",
     "check:solana-versions": "node scripts/check-solana-versions.mjs",
@@ -19,7 +20,7 @@
     "check:reference-imports": "node scripts/check-reference-imports.mjs",
     "phase0": "node tools/phase0/src/phase0.ts",
     "devnet:b": "node tools/devnet-b/src/devnet-b.ts",
-    "verify": "pnpm typecheck && pnpm test && pnpm fixtures:check && pnpm check:solana-versions && pnpm check:fixtures-deps && pnpm check:reference-imports && pnpm check:test-keys && pnpm check:core-size"
+    "verify": "pnpm typecheck && pnpm test && pnpm fixtures:check && pnpm check:solana-versions && pnpm check:fixtures-deps && pnpm check:reference-imports && pnpm check:test-keys && pnpm check:core-size && pnpm check:no-stubs && pnpm build"
   },
   "devDependencies": {
     "@types/node": "catalog:",
