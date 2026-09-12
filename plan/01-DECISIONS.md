@@ -959,6 +959,13 @@ fails exactly as the script did, and nothing specified which error to raise.
   wallet ends at zero) or at least rent + fee + the wallet minimum; otherwise it throws the new
   `NONCE_POOL_UNDERFUNDED`, with `detail` carrying the three parts and the shortfall.
 - The onboarding screen (`42-STREAM-C-apps.md` C0) asks for the full total, not the rent alone.
+- **Closing the pool is the same trap one transaction later.** The fee payer must still be rent-exempt
+  *after* its fee is deducted, and the lamports the withdrawal credits in that same transaction do not
+  count toward it. A payer left by `create` at exactly `getMinimumBalanceForRentExemption(0)` therefore
+  cannot close its own pool: devnet refused it on 2026-09-12 with the same message, during the Stream B
+  verification run. `Pool.close` checks the balance first and raises `NONCE_POOL_UNDERFUNDED` with that
+  reason rather than letting the chain refuse it, and a payer app that intends to close later funds
+  `walletMinimum + fee`.
 
 The second run funded the wallet minimum as well, and step 2 passed with one signature (D26).
 
