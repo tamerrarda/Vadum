@@ -18,6 +18,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Deliberately not pinned to the pull request's own changes: a new advisory against a dependency
+      # that has been in the tree for months should fail the next run, whatever that run happens to be
+      # about. The tree is clean at `low` today, so `moderate` leaves a margin rather than hiding
+      # anything.
+      - name: No known advisories against the locked dependency tree
+        run: pnpm audit --audit-level=moderate
       - run: pnpm typecheck
       - run: pnpm test
       - name: Fixtures reproduce byte-for-byte from the committed seeds (24-SPEC)

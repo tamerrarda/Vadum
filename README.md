@@ -71,6 +71,9 @@ pnpm -C apps/payer dev        # either app, in a browser
 pnpm -C apps/payer build      # build, then write the service worker's precache manifest
 ```
 
+`CONTRIBUTING.md` says what each of those checks is protecting, and the one rule worth knowing up
+front: `plan/` is normative, and a new dependency needs a decision record before it lands.
+
 The devnet runs send real transactions and ask before doing so:
 
 ```bash

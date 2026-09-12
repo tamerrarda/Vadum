@@ -1,0 +1,7 @@
+# Review is requested automatically from the owner. `plan/` matters most: it is the normative design,
+# and several questions in it are explicitly reserved for the owner to decide (WIRE-6, NONCE-9,
+# errata approval), so a pull request that edits it needs their eyes rather than anyone's.
+* @tamerrarda
+/plan/ @tamerrarda
+/.github/ @tamerrarda
+/SECURITY.md @tamerrarda
