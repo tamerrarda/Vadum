@@ -384,14 +384,26 @@ async function run(merchantKeyPath: string): Promise<void> {
     expect(charged > 0n, '9', `the merchant must have paid the fee; its balance moved by ${charged} lamports`);
     log('9', 'observed', `an overdraft sent with preflight skipped landed, failed, and was classified SUBMIT_EXECUTION_FAILED with feeCharged true; ${charged} lamports left the merchant`);
 
-    // 10 · SUBMIT_NONCE_STALE never touches the counter (B9, D21)
-    const replay = await signedPayment(intentFor(merchant, mint, AMOUNT), payerKey, { index: slot.index, value: spentAgainstValue }, AMOUNT, mintCache);
+    // 10 · SUBMIT_NONCE_STALE, and the control that separates it from a duplicate (B9, D21, D35).
+    // A **different** payment against the value the slot was already spent against is a stale nonce.
+    // The byte-identical one is not: same message, same signatures, same signature — it is the
+    // transaction that already settled, and the cluster says so. Phase 0 drew the same line (step 12),
+    // and an earlier version of this step blurred it by replaying the identical payment.
+    const STALE_AMOUNT = AMOUNT + 1n;
+    const staleAttempt = await signedPayment(intentFor(merchant, mint, STALE_AMOUNT), payerKey, { index: slot.index, value: spentAgainstValue }, STALE_AMOUNT, mintCache);
     const staleQueue = createQueue(rpc, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
-    await staleQueue.accept(replay.payment, 'T2', AMOUNT);
+    await staleQueue.accept(staleAttempt.payment, 'T2', STALE_AMOUNT);
     const [staleOutcome] = await staleQueue.drain(merchantKey);
     expect(staleOutcome?.kind === 'failed' && staleOutcome.code === 'SUBMIT_NONCE_STALE', '10', `expected SUBMIT_NONCE_STALE; got ${show(staleOutcome)}`);
     expect(staleQueue.consecutiveFailedSends() === 0, '10', `a stale nonce must not raise the counter; it reads ${staleQueue.consecutiveFailedSends()}`);
-    await paced('10', 'observed', 'a payment against the value the slot was already spent against was classified SUBMIT_NONCE_STALE, cost nothing, and left the failed-send counter at 0');
+
+    const duplicate = await submit(rpc, first.payment, merchantKey);
+    expect(duplicate.kind === 'settled', '10', `re-submitting the identical transaction must report settled, not a fresh failure; got ${show(duplicate)}`);
+    await paced(
+      '10',
+      'observed',
+      'a different payment against the consumed value was classified SUBMIT_NONCE_STALE, cost nothing, and left the counter at 0; re-submitting the identical transaction reported settled, because it is the transaction that already landed',
+    );
 
     // 11 · SUBMIT_NONCE_ABSENT, near-certain fraud (B9, T6)
     const fabricatedQueue = createQueue(rpc, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
