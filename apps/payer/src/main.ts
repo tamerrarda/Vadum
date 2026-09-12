@@ -18,7 +18,9 @@ import {
   isStandalone,
   loadOrCreateIdentity,
   mount,
+  needsRetype,
   parseAmount,
+  PAYER_PER_PAYMENT_CAP,
   qrImage,
   readEpochMarker,
   render,
@@ -28,6 +30,7 @@ import {
   signingBlock,
   STATE_COPY,
   text,
+  withinPayerCap,
   writeEpochMarker,
   assessLedger,
   type FailureCopy,
@@ -52,8 +55,8 @@ import wasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url';
 /** v1 is devnet only (D16). */
 const RPC_ENDPOINT = 'https://api.devnet.solana.com';
 const POOL_SIZE = 5;
-/** Above this the payer re-confirms the amount by typing it (31-PARAMETERS; see stream-c.md C-7). */
-const CONFIRM_THRESHOLD = 10_000_000n;
+// Both from apps/shared/src/limits.ts: the retype threshold is a second look at the amount, and the
+// cap is what actually bounds an unlocked stolen phone (T12, C-7).
 
 interface App {
   readonly identity: Identity;
@@ -249,8 +252,15 @@ async function confirm(app: App, intent: Intent, amount: bigint): Promise<void> 
         ? text('p', 'This came from a printed code. Anyone can cover a sticker with their own — check you are paying the right merchant.', 'warn')
         : text('p', 'Nothing here touches the network. You are signing what is shown.', 'muted');
 
+  // The payer's own cap: refused here, before anything is signed, because nothing else in the system
+  // bounds what this device will pay (T12). A thief with an unlocked phone retypes an amount happily.
+  if (!withinPayerCap(amount)) {
+    showCopy(STATE_COPY['above-payer-cap'], card(row('This payment', formatAmount(amount, intent.decimals)), row('Offline limit', formatAmount(PAYER_PER_PAYMENT_CAP, intent.decimals))), card(button('Back', () => home(app))));
+    return;
+  }
+
   const confirmed = (): void => void sign(app, intent, amount);
-  const above = amount > CONFIRM_THRESHOLD;
+  const above = needsRetype(amount);
   const check = element('input', { type: 'text', inputmode: 'decimal', 'aria-label': 'Re-enter the amount' }) as HTMLInputElement;
   const error = text('p', '', 'bad');
 
