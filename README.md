@@ -37,7 +37,7 @@ program of its own.
 | The libraries settle real payments, and the three submission failure classes are three distinct observable events | `pnpm devnet:b`, 13 steps on devnet through `core`, `wire` and `client` | `plan/references/stream-b-devnet-log.md` |
 | The whole air gap works without devices: reserve, sign, encode, render a QR, **read it back through the scanner**, decode, verify, settle, recover the slot | Gate G3, in one process with no network and no camera | `packages/integration/test/loopback.test.ts`, output in `plan/references/integration-tests.md` |
 | The race, the execution failure, the fabricated nonce, the duplicate `AUTH`, eviction, reconciliation, the mint block and every cap behave as specified | The integration scenarios of `plan/50-INTEGRATION.md` | `packages/integration/test/scenarios.test.ts`, output and what the three key ones assert in `plan/references/integration-tests.md` |
-| Every byte on the wire matches an independently generated reference | Golden fixtures, regenerated and compared in CI (D33) | `packages/fixtures/fixtures.json` |
+| Every byte on the wire is reproduced by a second implementation of the spec | Golden fixtures, regenerated and compared in CI (D33). They import no `@vadum/*` package, but they share kit and the program packages with `core` — so they pin **determinism**, not correctness. The correctness evidence is Phase 0, where a validator executed those bytes | `packages/fixtures/fixtures.json`, `plan/references/phase0-log.md` |
 | Every user-facing error code has copy, and the unreassuring ones stay unreassuring | A test that fails if a code has none | `apps/shared/test/errors.test.ts` |
 
 **Not yet verified:** airplane-mode cold start and scanning on real devices, iOS, storage wipe →
@@ -52,7 +52,7 @@ RECOVERY on a device, and the QR read-success measurement. The device checklist 
 | `packages/core` | Canonical message builder, validation, offline verification. No I/O, no clock |
 | `packages/wire` | QR payload codec, base45 (vendored), QR render and scan |
 | `packages/client` | RPC, nonce pool, mint cache, merchant queue, submission |
-| `packages/fixtures` | Golden test vectors from an independent reference generator |
+| `packages/fixtures` | Golden test vectors from a second implementation of the spec: no `@vadum/*` dependency, same kit version |
 | `packages/integration` | Gate G3 and the cross-package scenarios |
 | `apps/payer`, `apps/merchant` | Reference PWAs |
 | `apps/shared` | Browser runtime both apps share: storage, keys, the standalone gate, failure copy |
