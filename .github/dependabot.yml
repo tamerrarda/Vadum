@@ -18,6 +18,31 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # Written after the first run, which proposed both of the updates this project cannot take:
+    #
+    #   - Bumping the solana group (kit 8.0.0 -> 8.3.0 and the program packages) failed
+    #     `pnpm fixtures:check`. That is D1 working: the committed fixture bytes are generated with the
+    #     pinned versions, so these packages move only together AND only with a regenerated fixture
+    #     set. That is a deliberate operation with a decision record, not a monthly chore.
+    #   - Bumping `@types/node` to 26.x describes a runtime this project does not run on. Node is
+    #     pinned to 24 by `.nvmrc`, and the token packages declare `engines.node >=24.0.0` (D1).
+    #
+    # Only *version* updates are ignored below. A security advisory against any of these still opens a
+    # pull request, which is the half that must not be switched off.
+    ignore:
+      - dependency-name: '@solana/*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: '@solana-program/*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
     groups:
       solana:
         patterns:
