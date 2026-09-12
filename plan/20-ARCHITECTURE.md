@@ -92,11 +92,27 @@ The golden vectors of `24-SPEC-fixtures.md` and the deterministic script that pr
 **independent reference implementation** (D33): it depends on `@solana/kit`, the program packages and
 `qrcode` directly, and on no `@vadum/*` package. Committed, never hand-edited.
 
+### `packages/integration` — added at integration
+
+Private, test-only, and the home of the eleven integration tests of `50-INTEGRATION.md`, which cross
+every package and therefore belong to none of them. Gate **G3** lives here — reserve, sign, encode,
+render a QR, read it back through the real scanner, decode, verify, settle, recover the slot, all in one
+process with no network and no camera — together with the device-free scenarios: the race, the execution
+failure, the fabricated nonce, the duplicate `AUTH`, eviction, reconciliation, the mint block and every
+cap. Its `fake-chain.ts` spends a nonce value exactly once, which is what makes the race a race. Output
+in `plan/references/integration-tests.md`; the same paths run against devnet from `tools/devnet-b`.
+
 ### `apps/payer`, `apps/merchant` — Stream C
 
 PWAs (D2). Camera, service worker, the IndexedDB `KeyValueStore` with its `localStorage` mirror and
-pool epoch marker, RECOVERY detection, the standalone-mode gate (`13-RESEARCH-pwa.md`), all UI and
-copy — and fixture-backed fakes of the three packages under `apps/shared/`, for work before they land.
+pool epoch marker, RECOVERY detection, the standalone-mode gate (`13-RESEARCH-pwa.md`), all UI and copy.
+
+`apps/shared` is the runtime both apps import, so they cannot drift on the things that matter: the
+store and the epoch marker, the non-extractable Ed25519 identity (D9), the standalone gate, the failure
+copy for every user-facing error code (C7), amount formatting, and the UI primitives. **It holds no
+test doubles.** C0.5 planned fixture-backed fakes of `core`, `wire` and `client` there for the days
+before those packages landed; all three landed first, so the fakes were never written — recorded as C-1
+in `plan/questions/stream-c.md`.
 
 ---
 
@@ -106,7 +122,8 @@ copy — and fixture-backed fakes of the three packages under `apps/shared/`, fo
 |---|---|
 | root configs, `pnpm-workspace.yaml`, `tsconfig.base.json`, CI, `LICENSE`, `NOTICE`, `SECURITY.md` | **Stream 0.** Frozen after bootstrap; later changes are requested through `plan/questions/` |
 | `packages/fixtures/**` | **Stream 0.** Generated and committed, never hand-edited |
-| `tools/**` | **Stream 0.** The Phase 0 script, `tools/phase0`. It builds payments with the generator's reference modules (`@vadum/fixtures/reference`), which no stream may import — `pnpm check:reference-imports` |
+| `tools/**` | **Stream 0.** `tools/phase0`, the Phase 0 script, which builds payments with the generator's reference modules (`@vadum/fixtures/reference`) that no stream may import — `pnpm check:reference-imports`. Joined at integration by `tools/devnet-b`, which runs Stream B's B6–B10 clauses against devnet through the real packages instead |
+| `packages/integration/**` | Nobody while the streams run; added at integration. Test-only, and the one place allowed to import from every package at once |
 | `packages/core/**` | Stream A only |
 | `packages/wire/**`, `packages/client/**` | Stream B only |
 | `apps/**` | Stream C only |
@@ -131,7 +148,8 @@ waiting. It is avoided by three things, all in place **before** A, B and C start
    exact canonical message bytes, the exact wire payloads, valid signatures, and thirty-three negative
    cases. **B can build and test the entire codec against fixtures alone, before `core` works.**
 3. **Stream C's fixture-backed fakes** (C0.5), so C's second day is not every button throwing
-   `INTERNAL_NOT_IMPLEMENTED`.
+   `INTERNAL_NOT_IMPLEMENTED`. *In the event this was never needed: A and B landed before C started, so
+   `apps/shared` holds the real runtime and no fake was written (C-1).*
 
 The fixtures are the contract, and CI failing on them is CI telling you a stream broke the contract.
 
@@ -148,5 +166,8 @@ The fixtures are the contract, and CI failing on them is CI telling you a stream
 | Node | **≥ 24.** `@solana-program/token` and `token-2022` declare `engines.node >=24.0.0` (D1); kit alone would allow 20.18 |
 
 CI on every push: typecheck, unit tests, **golden fixture comparison**, fixture regeneration diff, the
-single-version check for `@solana/*`, the no-`@vadum/*` check on `packages/fixtures`, and a bundle-size
-check on `core` (it must stay small enough to read).
+single-version check for `@solana/*`, the no-`@vadum/*` check on `packages/fixtures`, a bundle-size check
+on `core` (it must stay small enough to read), the gate-G1 check that no stub body survives in
+`packages/core/src`, and **a build of both PWAs** — because the build is what proves the scanner's
+`.wasm` reaches `precache-manifest.json`, and D10's offline guarantee rests on that file. `pnpm verify`
+runs the same list locally.
