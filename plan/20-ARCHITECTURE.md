@@ -162,6 +162,7 @@ The fixtures are the contract, and CI failing on them is CI telling you a stream
 | Package manager | pnpm workspaces |
 | Language | TypeScript, `strict: true`, ES modules only |
 | Test runner | Vitest |
+| Browser tests | Playwright, Chromium only (D40). A separate CI step, deliberately **not** part of `pnpm verify` |
 | App build | Vite (both PWAs) |
 | Node | **≥ 24.** `@solana-program/token` and `token-2022` declare `engines.node >=24.0.0` (D1); kit alone would allow 20.18 |
 
@@ -171,3 +172,9 @@ on `core` (it must stay small enough to read), the gate-G1 check that no stub bo
 `packages/core/src`, and **a build of both PWAs** — because the build is what proves the scanner's
 `.wasm` reaches `precache-manifest.json`, and D10's offline guarantee rests on that file. `pnpm verify`
 runs the same list locally.
+
+A second CI step runs the Playwright suite in `apps/e2e` against the built PWAs (**D40**): the offline
+cold start through the service worker, the standalone gate, RECOVERY after storage is cleared, and the
+caps — in a real DOM, which no Vitest run can see. It is a separate step because it downloads a browser,
+and it **does not replace the device runs**: Chromium on Linux is not iOS Safari, and the camera path
+cannot be driven at all (`apps/AIRPLANE-MODE-CHECKLIST.md` step 4, gate G4).

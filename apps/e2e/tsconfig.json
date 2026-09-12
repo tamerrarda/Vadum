@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The config reads process.env for CI, and the suite builds paths to both apps' dist directories.
+    "types": ["node"]
+  },
+  "include": ["test", "playwright.config.ts"]
+}

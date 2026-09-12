@@ -11,6 +11,12 @@ coverage/
 # Throwaway devnet keys written by `pnpm phase0 --init-key` (zero value, never committed)
 .devnet/
 
+# Playwright output: reports and traces of the browser runs, regenerated on every run
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Local noise
 .DS_Store
 *.log

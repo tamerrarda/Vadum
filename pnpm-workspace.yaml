@@ -24,3 +24,5 @@ catalog:
   typescript: 7.0.2
   vitest: 5.0.0
   vite: 8.3.0
+  # Browser tests (D40). Chromium only, and it never runs in `pnpm verify` — see the decision record.
+  "@playwright/test": 1.63.0

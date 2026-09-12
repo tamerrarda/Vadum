@@ -39,9 +39,12 @@ program of its own.
 | The race, the execution failure, the fabricated nonce, the duplicate `AUTH`, eviction, reconciliation, the mint block and every cap behave as specified | The integration scenarios of `plan/50-INTEGRATION.md` | `packages/integration/test/scenarios.test.ts`, output and what the three key ones assert in `plan/references/integration-tests.md` |
 | Every byte on the wire is reproduced by a second implementation of the spec | Golden fixtures, regenerated and compared in CI (D33). They import no `@vadum/*` package, but they share kit and the program packages with `core` — so they pin **determinism**, not correctness. The correctness evidence is Phase 0, where a validator executed those bytes | `packages/fixtures/fixtures.json`, `plan/references/phase0-log.md` |
 | Every user-facing error code has copy, and the unreassuring ones stay unreassuring | A test that fails if a code has none | `apps/shared/test/errors.test.ts` |
+| Both apps behave in a real browser: a tab offers no way to sign, a marker without a ledger enters RECOVERY, the shell and every precached file — the scanner's `.wasm` included — come back with the network cut, and the merchant's offline cap is refused before any code is shown | Playwright in headless Chromium, against the built apps (D40) | `apps/e2e/test/`, and `apps/AIRPLANE-MODE-CHECKLIST.md` for what it deliberately cannot say |
 
 **Not yet verified:** airplane-mode cold start and scanning on real devices, iOS, storage wipe →
-RECOVERY on a device, and the QR read-success measurement. The device checklist is
+RECOVERY on a device, and the QR read-success measurement. Headless Chromium covers a *weaker* form of
+the cold start and of RECOVERY (D40) — not a real radio, not an installed app launched cold, not iOS,
+and not the camera, which cannot be driven headlessly at all. The device checklist is
 `apps/AIRPLANE-MODE-CHECKLIST.md`; the measurement method itself is still an open owner decision
 (WIRE-6), and `wire/measure.ts` is deliberately not implemented until it exists.
 

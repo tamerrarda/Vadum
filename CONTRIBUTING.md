@@ -18,6 +18,15 @@ pnpm verify              # typecheck, tests, fixture reproduction, and every rep
 `pnpm verify` is what CI runs. It must exit 0 before you open a pull request. Note that `pnpm -s`
 hides `tsc` output — check the exit code, not the absence of text.
 
+CI runs one thing more: `pnpm test:browser`, the Playwright suite in `apps/e2e` that drives both built
+PWAs in a real browser (D40). It sits outside `pnpm verify` because it downloads a browser. Run it
+whenever you touch either app:
+
+```sh
+pnpm -C apps/e2e exec playwright install --with-deps chromium   # once
+pnpm build && pnpm test:browser
+```
+
 ## What the checks are actually for
 
 Each one exists because something could rot silently:

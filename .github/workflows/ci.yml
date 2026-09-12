@@ -49,3 +49,17 @@ jobs:
       # missing from it.
       - name: Both PWAs build, and the scanner .wasm lands in the precache manifest (C1, D10)
         run: pnpm build
+      # D40. Separate from `pnpm verify` because it downloads a browser, and after `pnpm build` because
+      # the suite drives the built output. It does not close gate G4 or checklist step 4: Chromium on
+      # Linux is not iOS Safari, and the camera path cannot be driven headlessly.
+      - name: Install the browser the Playwright suite runs in (D40)
+        run: pnpm -C apps/e2e exec playwright install --with-deps chromium
+      - name: Browser tests — offline cold start, the standalone gate, RECOVERY, the merchant cap (D40)
+        run: pnpm test:browser
+      - name: Keep the Playwright report when the browser tests fail
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 7

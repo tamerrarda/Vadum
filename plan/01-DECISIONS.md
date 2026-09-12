@@ -1000,6 +1000,48 @@ still has no source in the SIMD file.
 
 ---
 
+## D40 · Browser tests are Playwright, Chromium only, and they stay out of `pnpm verify` — LOCKED
+
+Added 2026-09-12. PR #19 closed the scanner-decode gap and left the larger one: **no test had ever run
+in a browser.** Both apps' `main.ts` — onboarding, the standalone gate, RECOVERY, the caps, every screen
+transition — had no automated coverage at all, and they are the only files a user actually touches.
+
+The dependency is `@playwright/test@1.63.0`: one dev dependency, in `apps/e2e`, nothing at runtime.
+
+| Alternative | Why not |
+|---|---|
+| jsdom or happy-dom under Vitest | No service worker. The single most valuable thing to test is a navigation served from the worker's cache, and an emulated DOM cannot have one |
+| `@vitest/browser` | Downloads Playwright underneath, so it costs the same and adds a dependency on top. Its model is in-page unit tests, not a cold navigation with the network cut |
+| Nothing, as before | Leaves the two files with the most user-visible behaviour as the two with no tests |
+
+**What the CI run proves:** the service worker serves a navigation from cache with the network cut, and
+every file in `precache-manifest.json` — the scanner's `.wasm` included — is really in that cache
+(D10); the standalone gate offers no way to sign in a browser tab (T4); a marker without a ledger
+enters RECOVERY and refuses to sign; and the merchant's offline tier refuses a sale above its
+per-receipt cap in the DOM, not only in `client/queue.ts` (D23).
+
+**The payer's own per-payment cap (T12) is not covered, and that is a gap rather than an oversight.**
+It lives in the confirmation screen, which is reachable only by scanning a request, and the camera
+cannot be driven headlessly. Chromium's fake-video-capture flag could feed it a synthesised frame;
+that is not attempted here, and it would still be Chromium rather than iOS.
+
+**What it does not prove, so that a green check is not read as more than it is.** Chromium on Linux is
+not iOS Safari. Checklist step 4 — the camera opening offline and reading a code through `zxing-wasm` —
+cannot be driven headlessly at all, and that is the step that fails silently on iOS. Step 3 is only
+*weakly* covered: the checklist's own preamble says devtools-style offline does not reproduce a cold
+start, and cutting Chromium's network is exactly devtools-style offline. **Gate G4 still needs two
+phones.** Playwright can install WebKit, and deliberately does not here: a WebKit run would imply an
+iOS claim it cannot make.
+
+**Why it is outside `pnpm verify`:** `pnpm verify` is the fast local gate every contributor runs, and it
+should not cost a 150 MB browser download to someone who touched neither app. CI runs `pnpm build`
+first — the suite drives the built output, including the precache manifest — then `pnpm test:browser`.
+
+*Rules out:* jsdom/happy-dom emulation of the service worker; a WebKit run standing in for an iOS
+device; browser tests inside `pnpm verify`; treating any CI green as closing G4 or checklist step 4.
+
+---
+
 ## Provisional — needs a measurement before locking
 
 | ID | Decision | Confirm by |
