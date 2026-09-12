@@ -3,7 +3,8 @@
 // network is cut. None of this is visible to a Vitest run, and all of it is what the demo depends on.
 
 import { expect, type Page, test } from '@playwright/test';
-import { AS_INSTALLED, MARKER_WITHOUT_LEDGER, PAYER_URL } from './pwa.ts';
+import { getBase58Decoder } from '@solana/kit';
+import { AS_INSTALLED, exportIdentityPublicKey, MINT_ADDRESS, PAYER_URL, poolLedger, seedStore, SET_EPOCH_MARKER } from './pwa.ts';
 
 /** The worker is registered and never awaited at boot, so a test must wait for it to activate. */
 const waitForActiveWorker = (page: Page): Promise<unknown> =>
@@ -28,12 +29,48 @@ test('a marker with no ledger enters RECOVERY and still refuses to sign (C3, che
   // Exactly the state clearing site data leaves behind: the epoch marker in localStorage survives in
   // the mirror, the pool ledger in IndexedDB does not. `assessLedger` must call that RECOVERY rather
   // than treating it as a fresh device.
-  await page.addInitScript(AS_INSTALLED + MARKER_WITHOUT_LEDGER);
+  // The marker with no `pool:<payer>` record beside it is exactly that state.
+  await page.addInitScript(AS_INSTALLED + SET_EPOCH_MARKER);
   await page.goto(PAYER_URL);
 
   await expect(page.getByRole('heading', { name: 'Cannot pay offline — reconnect once to restore' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Restore from the network' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Scan a payment request' })).toHaveCount(0);
+});
+
+test('a device with no checked token says so, and offers the screen that fixes it', async ({ page }) => {
+  // No test here may reach devnet: if the app tries, the request fails fast rather than making CI
+  // depend on a live cluster (D16).
+  await page.route(/api\.devnet\.solana\.com/, (route) => route.abort());
+  await page.addInitScript(AS_INSTALLED);
+  await page.goto(PAYER_URL);
+
+  // First boot creates the device identity, and its address names the pool ledger — so read the public
+  // half back and seed a ledger. The alternative route to the home screen is onboarding, which needs
+  // the network this test has just cut off.
+  const publicKey = await page.evaluate(exportIdentityPublicKey);
+  if (publicKey === null) throw new Error('the app did not create a device identity');
+  const payer = getBase58Decoder().decode(new Uint8Array(publicKey));
+  const records: readonly (readonly [string, unknown])[] = [[`pool:${payer}`, poolLedger(payer)]];
+  await page.evaluate(seedStore, records);
+  await page.addInitScript(SET_EPOCH_MARKER);
+  await page.reload();
+
+  await expect(page.getByText('No tokens checked yet')).toBeVisible();
+  // Scanning a request with an empty mint cache could only ever end in MINT_UNKNOWN, so it is not
+  // offered. Scanning a recovery code needs no mint and stays available.
+  await expect(page.getByRole('button', { name: 'Scan a payment request' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Scan a recovery code' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Check a token' }).click();
+  await expect(page.getByRole('heading', { name: 'Tokens you can pay with' })).toBeVisible();
+  await expect(page.getByText('This device can only pay with a token it has checked online')).toBeVisible();
+
+  // The button is wired to the network, which is blocked here: it must fail visibly rather than hang
+  // or silently do nothing.
+  await page.getByLabel('Mint address').fill(MINT_ADDRESS);
+  await page.getByRole('button', { name: 'Check this token' }).click();
+  await expect(page.getByRole('heading', { name: /could not reach the network|that did not work/i })).toBeVisible({ timeout: 30_000 });
 });
 
 test('the shell and every precached file survive the network being cut (D10, checklist step 3)', async ({ context, page }) => {

@@ -23,6 +23,8 @@ setup fee and wallet floor included, not the rent alone (D38). A close-pool acti
 settings.
 
 **Done when:** on devnet a fresh payer funds, creates a pool of five, and closes it with the rent back.
+Creating the pool lands on the token screen rather than the home screen (C4): the device is certainly
+online at that moment, and a pool with no checked token cannot pay for anything.
 
 ## C0.5 · Fixture-backed fakes
 
@@ -92,8 +94,20 @@ offline signing, and the payer app opened in a browser tab never offers to sign.
 
 Scan, routed by `peekPayloadType` → decode the intent against the mint cache (**unknown mints are
 refused**, `MINT_UNKNOWN`; a stale *mutable* mint warns and caps per D22, never hard-blocks) →
-confirmation screen showing merchant, amount, mint and any staleness → device biometric above the
-threshold in `31-PARAMETERS.md` → `Pool.reserveSlot` → `core.signAsPayer` → render the `AUTH` QR.
+confirmation screen showing merchant, amount, mint and any staleness → **refused outright above the
+payer's per-payment cap** (T12), and the amount **re-typed** above the threshold in
+`31-PARAMETERS.md` → `Pool.reserveSlot` → `core.signAsPayer` → render the `AUTH` QR.
+
+*The line above said "device biometric" until 2026-09-12. A PWA cannot provide one offline, which is
+why `31-PARAMETERS.md` now specifies re-entry plus a hard cap instead (REV-14, T12).*
+
+**Something has to fill the mint cache, and until 2026-09-12 nothing did.** `MintCache.refresh` is its
+only writer and the payer app never called it, so a device could fund a pool, go offline, scan a
+request and be permanently stuck on `MINT_UNKNOWN` — pointed by its own copy at a screen that did not
+exist. The payer app therefore owns a **token screen**: online, reachable from the home screen, from
+the end of onboarding, and from the `MINT_UNKNOWN` failure itself. It calls `refresh` and refuses an
+incompatible mint there, rather than at a confirmation screen with a merchant waiting (D8). With no
+token checked the home screen says so and does not offer to scan a payment.
 
 The order of the last three steps is the fail-safe (D32): the slot is persisted as spent before the
 signature exists.

@@ -126,7 +126,9 @@ async function createPoolNow(app: App): Promise<void> {
   try {
     const status = await app.pool.create(POOL_SIZE, app.identity.keyPair);
     writeEpochMarker(localStorage, status.epoch);
-    await home(app);
+    // Straight to the token screen, not home: this is the one moment the device is certainly online,
+    // and a pool with no checked token cannot pay for anything.
+    await tokens(app);
   } catch (error) {
     failed(app, error);
   }
@@ -137,12 +139,67 @@ async function home(app: App): Promise<void> {
   const lowWater = status.belowLowWaterMark
     ? text('p', `${status.unspentCount} offline payments left — reconnect to refresh them.`, 'warn')
     : text('p', `${status.unspentCount} of ${status.size} offline payments ready.`, 'muted');
+  // A payment can only be decoded against a mint this device has checked online (receive rules 4 and
+  // 5). With none checked, scanning a request can end only in MINT_UNKNOWN, so the button says why
+  // instead of leading the payer into a failure that looks like a broken app.
+  const tokenCount = app.mints.entries().length;
+  const tokenNotice =
+    tokenCount === 0
+      ? text('p', 'No tokens checked yet — a payment cannot be verified offline until you check one.', 'warn')
+      : text('p', `${tokenCount} token${tokenCount === 1 ? '' : 's'} ready to pay with.`, 'muted');
   render(
     text('h1', 'Vadum'),
-    card(row('This device', shortAddress(app.identity.address)), row('Key', app.identity.signingPath === 'native' ? 'device WebCrypto' : 'software fallback'), lowWater),
-    card(button('Scan a payment request', () => scan(app, 'payment'), { primary: true, disabled: status.unspentCount === 0 })),
+    card(
+      row('This device', shortAddress(app.identity.address)),
+      row('Key', app.identity.signingPath === 'native' ? 'device WebCrypto' : 'software fallback'),
+      lowWater,
+      tokenNotice,
+    ),
+    card(button('Scan a payment request', () => scan(app, 'payment'), { primary: true, disabled: status.unspentCount === 0 || tokenCount === 0 })),
     card(button('Scan a recovery code', () => scan(app, 'recovery'))),
+    card(button(tokenCount === 0 ? 'Check a token' : `Tokens (${tokenCount})`, () => tokens(app))),
     card(button('Refresh from the network', () => restore(app)), button('Close slots and get the deposit back', () => closePool(app))),
+  );
+}
+
+/**
+ * The tokens this device can pay with (C4). Online, and the only writer of the mint cache on the payer
+ * side — without it `decodeIntent` throws `MINT_UNKNOWN` for every request, which is exactly what it
+ * did before this screen existed: a device could fund a pool, go offline, scan, and be stuck for good.
+ */
+async function tokens(app: App): Promise<void> {
+  const input = element('input', { type: 'text', placeholder: 'Token mint address', 'aria-label': 'Mint address' }) as HTMLInputElement;
+  const status = text('p', 'Checking a token needs a connection once. After that you can pay with it offline.', 'muted');
+  const checked = app.mints.entries();
+  render(
+    text('h1', 'Tokens you can pay with'),
+    checked.length === 0
+      ? card(text('p', STATE_COPY['no-tokens'].body, 'warn'))
+      : card(...checked.map((record) => row(shortAddress(record.mint), `${record.decimals} decimals · ${record.tokenProgram}`))),
+    card(input, status),
+    card(
+      button(
+        'Check this token',
+        async () => {
+          try {
+            status.textContent = 'Checking…';
+            status.className = 'muted';
+            const record = await app.mints.refresh(input.value.trim() as Address);
+            // A mint whose rules make an offline payment unverifiable is refused here rather than at
+            // the confirmation screen, where the payer has a merchant waiting (D8).
+            if (!record.compatible) {
+              showCopy(copyFor('MINT_INCOMPATIBLE'), card(text('p', `Blocked by: ${record.blockers.join(', ')}`, 'bad')), card(button('Back', () => tokens(app))));
+              return;
+            }
+            await tokens(app);
+          } catch (error) {
+            failed(app, error);
+          }
+        },
+        { primary: true },
+      ),
+      button('Back', () => home(app)),
+    ),
   );
 }
 
@@ -318,9 +375,17 @@ async function sign(app: App, intent: Intent, amount: bigint): Promise<void> {
   }
 }
 
+const FIXED_BY_CHECKING_A_TOKEN = new Set(['MINT_UNKNOWN', 'MINT_DECIMALS_MISMATCH', 'MINT_TOKEN_PROGRAM_MISMATCH']);
+
 function failed(app: App, error: unknown): void {
   const copy = error instanceof VadumError ? copyFor(error.code) : { title: 'That did not work', body: 'The step could not be completed. Nothing was signed or sent.', side: 'payer' as const };
-  showCopy(copy, card(button('Back', () => home(app))));
+  // `MINT_UNKNOWN` says "reconnect once to check it", so the screen has to offer the place that does
+  // it. Pointing at a screen that did not exist was the whole of the defect.
+  const next =
+    error instanceof VadumError && FIXED_BY_CHECKING_A_TOKEN.has(error.code)
+      ? card(button('Check this token', () => tokens(app), { primary: true }), button('Back', () => home(app)))
+      : card(button('Back', () => home(app)));
+  showCopy(copy, next);
   if (!(error instanceof VadumError)) console.error(error);
 }
 
