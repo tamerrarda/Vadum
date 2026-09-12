@@ -18,8 +18,10 @@ means:
 - exact TypeScript signatures for all three packages (`22`, `25`, `26`)
 - exact byte layouts, receive rules and the order checks run in (`21-SPEC-wire-format.md`)
 - exact error codes (`23-SPEC-errors.md`)
-- **golden test vectors** (`24-SPEC-fixtures.md`), generated independently by Stream 0, so streams B
-  and C can build against known-good bytes before stream A has finished producing them
+- **golden test vectors** (`24-SPEC-fixtures.md`), written by Stream 0 as a second implementation of
+  the spec that imports no `@vadum/*` package, so streams B and C can build against known-good bytes
+  before stream A has finished producing them. They share kit and the program packages with `core`, so
+  what they pin is determinism; correctness was proven on chain by Phase 0
 
 If a coding session has to make a design decision, this folder failed. Every such decision belongs in
 `01-DECISIONS.md` with its rationale, and every unknown belongs in `02-OPEN-QUESTIONS.md` until it is
