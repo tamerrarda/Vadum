@@ -604,8 +604,9 @@ project's most durable output (`ART-3`), relicensing it CC0 later is a one-line 
 does not obstruct.
 
 Repository: `github.com/tamerrarda/Vadum`, public from the first commit. (The plan wrote
-`tamerarda/vadum`; the GitHub handle has two r's.) **As of 2026-09-11 the repository is private** —
-going public is tracked as OPS-7. `NOTICE`, `LICENSE` and a
+`tamerarda/vadum`; the GitHub handle has two r's.) It was created private on 2026-09-11 and **went
+public on 2026-09-12**, with GitHub's private vulnerability reporting enabled — the channel
+`SECURITY.md` points at, which only a public repository can offer. `NOTICE`, `LICENSE` and a
 `SECURITY.md` with a disclosure address are bootstrap deliverables.
 
 ---
@@ -1020,5 +1021,5 @@ all tracked in `02-OPEN-QUESTIONS.md`:
 | ID | What | Blocks |
 |---|---|---|
 | WIRE-6 | `32-MEASUREMENT-METHOD.md` written | Stream B's B5 and any measurement data — not spec freeze |
-| OPS-7 | Whether and when the repository goes public | Nothing in the build |
+| ~~OPS-7~~ | ✅ Closed 2026-09-12 — the repository is public, and private vulnerability reporting is enabled | — |
 | NONCE-9 | Releasing an abandoned slot by self-advancing the nonce | Nothing in v1 |
