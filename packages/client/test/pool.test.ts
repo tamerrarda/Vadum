@@ -201,7 +201,8 @@ describe('reconcile (NONCE_DESYNC, D32)', () => {
 
     const slots = pool.status().slots;
     expect(slots[0]).toEqual({ index: 0, address: addresses[0], value: value(7), state: 'unspent' });
-    expect(slots[1]).toEqual({ index: 1, address: addresses[1], value: value(1), state: 'unspent' });
+    // Released rather than settled: the value never moved, so the slot is marked and reused last.
+    expect(slots[1]).toEqual({ index: 1, address: addresses[1], value: value(1), state: 'unspent', releasedAt: SEND_WINDOW_MS + 1 });
     expect(slots[2]).toMatchObject({ state: 'spent' });
     expect(pool.status().unspentCount).toBe(2);
   });
@@ -220,5 +221,50 @@ describe('reconcile (NONCE_DESYNC, D32)', () => {
     await pool.reserveSlot(merchant, 1_000);
     const reopened = createPool(rpc, payer, store);
     expect((await reopened.load()).slots[0]).toMatchObject({ state: 'spent', spentAgainst: { merchant } });
+  });
+});
+
+describe('released slots are reused last (NONCE-9)', () => {
+  it('prefers a slot that was never released', async () => {
+    const { pool } = await createdPool();
+    // Slot 0 is spent and then abandoned: the merchant never submitted, so reconciliation releases it
+    // with its value unchanged — and that merchant can still submit the payment it holds.
+    await pool.reserveSlot(merchant, 0);
+    expect((await pool.reconcile(SEND_WINDOW_MS)).released).toEqual([0]);
+
+    // Handing slot 0 straight back out would make that late submission race the next payment. It goes
+    // last instead, so slots 1 and 2 are used first.
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(1);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(2);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(0);
+  });
+
+  it('takes the least recently released slot when every slot has been released', async () => {
+    const { pool } = await createdPool();
+    await pool.reserveSlot(merchant, 0);
+    await pool.reserveSlot(merchant, 0);
+    await pool.reserveSlot(merchant, 5_000);
+    expect((await pool.reconcile(SEND_WINDOW_MS)).released).toEqual([0, 1]);
+    expect((await pool.reconcile(SEND_WINDOW_MS + 5_000)).released).toEqual([2]);
+
+    // Slots 0 and 1 were released first, so one of them comes before slot 2.
+    expect([0, 1]).toContain((await pool.reserveSlot(merchant, SEND_WINDOW_MS + 6_000)).index);
+  });
+
+  it('clears the mark once the slot settles, because its value has moved', async () => {
+    const { pool, rpc } = await createdPool();
+    await pool.reserveSlot(merchant, 0);
+    await pool.reconcile(SEND_WINDOW_MS);
+    expect(pool.status().slots[0]).toMatchObject({ releasedAt: SEND_WINDOW_MS });
+
+    // Use up the unreleased slots so the released one comes round again, then let it settle.
+    await pool.reserveSlot(merchant, SEND_WINDOW_MS);
+    await pool.reserveSlot(merchant, SEND_WINDOW_MS);
+    expect((await pool.reserveSlot(merchant, SEND_WINDOW_MS)).index).toBe(0);
+
+    rpc.nonceAccounts = { ...rpc.nonceAccounts, ...initialized(addresses[0]!, value(9)) };
+    expect((await pool.reconcile(SEND_WINDOW_MS)).settled).toContain(0);
+    // Nothing can race a value that has moved, so the slot is an ordinary first-choice slot again.
+    expect(pool.status().slots[0]?.releasedAt).toBeUndefined();
   });
 });

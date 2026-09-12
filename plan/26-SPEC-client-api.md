@@ -194,6 +194,12 @@ export interface PoolSlot {
   /** Set when state === 'spent'. Needed by applyNonceReturn (21-SPEC rule 12, D28) and by
    *  the NONCE_DESYNC reconciliation (23-SPEC). */
   readonly spentAgainst?: { readonly value: Nonce; readonly merchant: Address; readonly at: number };
+  /**
+   * Set when `reconcile` released the slot with its value unchanged. Added 2026-09-12 (NONCE-9): the
+   * old payment is still submittable by that merchant, so `reserveSlot` hands a released slot out
+   * **last**, least recently released first. Cleared as soon as the value moves.
+   */
+  readonly releasedAt?: number;
 }
 
 export interface PoolStatus {
@@ -232,6 +238,7 @@ export interface Pool {
    * no pool state.
    */
   reserveSlot(merchant: Address, now: number): Promise<{ readonly index: number; readonly value: Nonce }>;
+  // Order: any slot never released, then the least recently released one (NONCE-9).
   /**
    * Offline. Receive rule 12: looks up the slot's spentAgainst record (rejecting if there is none),
    * calls core.verifyNonceReturn with this pool's payer and that record (D28), and only on success

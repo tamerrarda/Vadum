@@ -34,6 +34,13 @@ export interface PoolSlot {
   readonly state: 'unspent' | 'spent' | 'unknown';
   /** Set when state === 'spent'. Needed by applyNonceReturn (rule 12, D28) and by reconciliation. */
   readonly spentAgainst?: { readonly value: Nonce; readonly merchant: Address; readonly at: number };
+  /**
+   * When reconciliation released this slot without its value changing — the merchant never submitted.
+   * The old payment is still signable by that merchant, so this slot is reused **last**: a released
+   * slot handed straight back out is the one place the late-submission race is guaranteed rather than
+   * unlucky (NONCE-9). Cleared the moment the value moves.
+   */
+  readonly releasedAt?: number;
 }
 
 export interface PoolStatus {
@@ -90,11 +97,12 @@ const withSlot = (state: PoolState, slot: PoolSlot): PoolState => ({
 });
 
 /** Drops `spentAgainst` rather than carrying a stale record on an unspent slot. */
-const rearmed = (slot: PoolSlot, value: Nonce | null, state: PoolSlot['state'] = 'unspent'): PoolSlot => ({
+const rearmed = (slot: PoolSlot, value: Nonce | null, state: PoolSlot['state'] = 'unspent', releasedAt?: number): PoolSlot => ({
   index: slot.index,
   address: slot.address,
   value,
   state,
+  ...(releasedAt === undefined ? {} : { releasedAt }),
 });
 
 export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, options?: { readonly sendWindowMs?: number }): Pool {
@@ -168,7 +176,12 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
 
     async reserveSlot(merchant, now) {
       const state = await loaded();
-      const slot = state.slots.find((candidate) => candidate.state === 'unspent' && candidate.value !== null);
+      const usable = state.slots.filter((candidate) => candidate.state === 'unspent' && candidate.value !== null);
+      // A released slot still carries a payment some merchant could submit late, so it goes last and
+      // the least recently released one goes first. Taking the lowest index unconditionally handed
+      // the just-released slot straight back out, which made the race certain instead of unlikely
+      // (NONCE-9). Costs nothing; the alternative was self-advancing the nonce, which costs SOL.
+      const slot = usable.find((candidate) => candidate.releasedAt === undefined) ?? [...usable].sort((a, b) => (a.releasedAt ?? 0) - (b.releasedAt ?? 0))[0];
       if (slot?.value == null) throw new VadumError('NONCE_POOL_EXHAUSTED', { payer, size: state.size });
       // Persisted before this resolves: the app signs only afterwards (D32).
       await persist(withSlot(state, { ...slot, state: 'spent', spentAgainst: { value: slot.value, merchant, at: now } }));
@@ -242,7 +255,9 @@ export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore, 
           state = withSlot(state, rearmed(slot, value));
           settled.push(slot.index);
         } else if (now - record.at >= sendWindowMs) {
-          state = withSlot(state, rearmed(slot, value));
+          // Released, not settled: the value has not moved, so the merchant's signed payment is still
+          // valid against it. Marked, so `reserveSlot` hands it out only when nothing else is free.
+          state = withSlot(state, rearmed(slot, value, 'unspent', now));
           released.push(slot.index);
         } else {
           stillPending.push(slot.index);
