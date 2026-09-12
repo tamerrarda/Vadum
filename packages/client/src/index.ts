@@ -6,12 +6,15 @@ export { precheckNonce, type NonceVerdict } from './nonce-check.ts';
 export {
   createPool,
   DEFAULT_POOL_SIZE,
+  DEFAULT_SPEND_LIMIT,
   LAMPORTS_PER_SIGNATURE,
   POOL_LOW_WATER_MARK,
   SEND_WINDOW_MS,
+  SPEND_LIMIT_WINDOW_MS,
   type Pool,
   type PoolSlot,
   type PoolStatus,
+  type SpendAllowance,
 } from './pool.ts';
 export { createQueue, DEFAULT_QUEUE_LIMITS, paymentId, remainingExposure, type QueuedPayment, type QueueLimits, type Queue } from './queue.ts';
 export { submit, type SubmitOutcome } from './submit.ts';

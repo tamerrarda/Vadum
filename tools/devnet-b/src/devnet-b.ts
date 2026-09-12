@@ -306,7 +306,10 @@ async function run(merchantKeyPath: string): Promise<void> {
 
     // 5 · the payer funds and creates its own pool (B8, D26)
     const store = createMemoryStore();
-    const pool = createPool(rpc, payer, store);
+    // Step 9 signs an overdraft of ten times the minted balance on purpose, which the payer's 24-hour
+    // spend limit (T12) would refuse — correctly. This script exercises the merchant's failure
+    // classifier, not the payer's limits, so it lifts that one limit and says so.
+    const pool = createPool(rpc, payer, store, { spendLimit: MINTED * 100n });
     const cost = await pool.estimateSetupCost(POOL_SIZE);
     // The last `cost.fee` is for the eventual close: a wallet left exactly at the rent floor cannot
     // pay any fee at all, because the fee payer must stay rent-exempt after the deduction (D38).
@@ -320,7 +323,7 @@ async function run(merchantKeyPath: string): Promise<void> {
     await paced('5', 'ok', `the payer created its own pool of ${POOL_SIZE}: ${cost.nonceRent} lamports of refundable rent, wallet left at the rent-exempt floor`);
 
     // 6 · a real payment: reserve, sign offline, verify, pre-check, accept at T1, drain (B7, B9, B10)
-    const slot = await pool.reserveSlot(merchant, Date.now());
+    const slot = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     const spentAgainstValue = slot.value;
     const first = await signedPayment(intentFor(merchant, mint, AMOUNT), payerKey, slot, AMOUNT, mintCache);
     expect(first.intentBytes.length === 76 && first.authBytes.length === 132, '6', `wire sizes must be 76 and 132; got ${first.intentBytes.length} and ${first.authBytes.length}`);
@@ -374,7 +377,7 @@ async function run(merchantKeyPath: string): Promise<void> {
     // so the expensive class has to be produced deliberately: preflight skipped, transaction lands,
     // fee taken. That is the only way to watch `feeCharged: true` come out of the shipped classifier
     // rather than out of a test double — which is exactly what an adversarial review called out.
-    const overdraftSlot = await pool.reserveSlot(merchant, Date.now());
+    const overdraftSlot = await pool.reserveSlot(merchant, Date.now(), MINTED * 10n);
     const overdraft = await signedPayment(intentFor(merchant, mint, MINTED * 10n), payerKey, overdraftSlot, MINTED * 10n, mintCache);
     const lamportsBefore = await rpc.getBalance(merchant);
     const overdraftOutcome = await submit(rpc, overdraft.payment, merchantKey, { skipPreflight: true });
@@ -415,14 +418,14 @@ async function run(merchantKeyPath: string): Promise<void> {
 
     // 12 · reconcile: a settled slot comes back with no NONCE_RETURN at all, an abandoned one is
     // released past the send window, and a slot whose payment never landed is released too (B8, D32).
-    const settledSlot = await pool.reserveSlot(merchant, Date.now());
+    const settledSlot = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     const second = await signedPayment(intentFor(merchant, mint, AMOUNT), payerKey, settledSlot, AMOUNT, mintCache);
     const secondQueue = createQueue(rpc, createMemoryStore(), DEFAULT_QUEUE_LIMITS);
     await secondQueue.accept(second.payment, 'T0', AMOUNT);
     const [secondOutcome] = await secondQueue.drain(merchantKey);
     expect(secondOutcome?.kind === 'settled', '12', `the second payment must settle; got ${show(secondOutcome)}`);
 
-    const abandoned = await pool.reserveSlot(merchant, Date.now());
+    const abandoned = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     const immediate = createPool(rpc, payer, store, { sendWindowMs: 0 });
     await immediate.load();
     const reconciled = await immediate.reconcile(Date.now());

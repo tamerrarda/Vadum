@@ -355,6 +355,24 @@ async function confirm(app: App, intent: Intent, amount: bigint): Promise<void> 
     return;
   }
 
+  // The cap bounds one payment and says nothing about how many. The spend limit does, and nothing but
+  // time refills it — "Refresh from the network" re-arms slots, which is how the old bound fell (REV-17).
+  // `reserveSlot` enforces it; asking here tells the payer before the Sign button rather than after.
+  const allowance = await app.pool.allowance(Date.now());
+  if (amount > allowance.remaining) {
+    showCopy(
+      copyFor('LIMIT_PAYER_ALLOWANCE'),
+      card(
+        row('This payment', formatAmount(amount, intent.decimals)),
+        row('Signed offline, last 24 hours', formatAmount(allowance.spent, intent.decimals)),
+        row('Limit per 24 hours', formatAmount(allowance.limit, intent.decimals)),
+        ...(allowance.nextRefillAt === null ? [] : [row('Frees up from', new Date(allowance.nextRefillAt).toLocaleString())]),
+      ),
+      card(button('Back', () => home(app))),
+    );
+    return;
+  }
+
   const confirmed = (): void => void sign(app, intent, amount);
   const above = needsRetype(amount);
   const check = element('input', { type: 'text', inputmode: 'decimal', 'aria-label': 'Re-enter the amount' }) as HTMLInputElement;
@@ -399,7 +417,7 @@ async function sign(app: App, intent: Intent, amount: bigint): Promise<void> {
     }
     // The fail-safe order (D32): the slot is persisted as spent before a signature exists, so a crash
     // here costs a slot until reconciliation, never a double-spend.
-    const slot = await app.pool.reserveSlot(intent.merchant, Date.now());
+    const slot = await app.pool.reserveSlot(intent.merchant, Date.now(), amount);
     const auth = await signAsPayer({ intent, payer: app.identity.address, nonceRef: slot, amount }, app.identity.keyPair);
     const payload = encodeAuth(auth, flagsFromByte((intent.isStatic ? 0b0001_0000 : 0) | (intent.includeCreateAta ? 0b0000_0010 : 0) | (intent.tokenProgram === 'token-2022' ? 0b0000_0100 : 0) | (intent.lifetime.kind === 'fresh' ? 0b0000_0001 : 0)));
     const qr = await renderQr(payload);

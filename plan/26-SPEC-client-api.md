@@ -237,8 +237,19 @@ export interface Pool {
    * Throws NONCE_POOL_EXHAUSTED when no slot qualifies, NONCE_LEDGER_MISSING when the store holds
    * no pool state.
    */
-  reserveSlot(merchant: Address, now: number): Promise<{ readonly index: number; readonly value: Nonce }>;
+  reserveSlot(merchant: Address, now: number, amount: bigint): Promise<{ readonly index: number; readonly value: Nonce }>;
   // Order: any slot never released, then the least recently released one (NONCE-9).
+  // `amount` is logged in the same write that marks the slot spent. Throws LIMIT_PAYER_ALLOWANCE,
+  // persisting nothing, when amount is not positive or would take the last 24 hours past the spend
+  // limit (T12, REV-17) — checked before a slot is chosen, so a refusal costs no slot.
+  /**
+   * What this device may still sign offline at `now`. Added 2026-09-13 (REV-17). Refilled only as
+   * logged payments leave the window — never by reconcile, applyNonceReturn, close, create or
+   * recover, each of which whoever holds the phone can trigger. `create` and `recover` carry the log
+   * over into the ledger they write. An entry dated after `now` still counts, so winding the device
+   * clock back refills nothing.
+   */
+  allowance(now: number): Promise<SpendAllowance>;
   /**
    * Offline. Receive rule 12: looks up the slot's spentAgainst record (rejecting if there is none),
    * calls core.verifyNonceReturn with this pool's payer and that record (D28), and only on success
@@ -272,8 +283,29 @@ export interface Pool {
   status(): PoolStatus;
 }
 
-export function createPool(rpc: VadumRpc, payer: Address, store: KeyValueStore): Pool;
+export interface SpendAllowance {
+  readonly limit: bigint;               // DEFAULT_SPEND_LIMIT = 100_000_000 (31-PARAMETERS)
+  readonly spent: bigint;               // logged inside the window, future-dated entries included
+  readonly remaining: bigint;
+  readonly nextRefillAt: number | null; // earliest counted entry + the window; null when none
+}
+
+export function createPool(
+  rpc: VadumRpc,
+  payer: Address,
+  store: KeyValueStore,
+  options?: {
+    readonly sendWindowMs?: number;       // default SEND_WINDOW_MS, 24 h
+    readonly spendLimit?: bigint;         // default DEFAULT_SPEND_LIMIT
+    readonly spendLimitWindowMs?: number; // default SPEND_LIMIT_WINDOW_MS, 24 h
+  },
+): Pool;
 ```
+
+The spend limit lives here rather than in the payer app because this is the one place a slot becomes
+spent, and a limit written anywhere else could be passed by a code path that reserves a slot without
+it. `tools/devnet-b` raises it for one pool, because its step 9 signs a deliberate overdraft to observe
+the merchant's failure classifier.
 
 `recover` is what makes T4's mitigation true. Every other method reads the ledger first, so with the
 ledger gone the RECOVERY screen's "Restore from the network" button could only ever throw

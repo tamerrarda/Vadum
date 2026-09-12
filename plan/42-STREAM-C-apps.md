@@ -99,8 +99,9 @@ offline signing, and the payer app opened in a browser tab never offers to sign.
 Scan, routed by `peekPayloadType` → decode the intent against the mint cache (**unknown mints are
 refused**, `MINT_UNKNOWN`; a stale *mutable* mint warns and caps per D22, never hard-blocks) →
 confirmation screen showing merchant, amount, mint and any staleness → **refused outright above the
-payer's per-payment cap** (T12), and the amount **re-typed** above the threshold in
-`31-PARAMETERS.md` → `Pool.reserveSlot` → `core.signAsPayer` → render the `AUTH` QR.
+payer's per-payment cap** (T12), **refused past the 24-hour spend limit** (`Pool.allowance`, REV-17),
+and the amount **re-typed** above the threshold in `31-PARAMETERS.md` → `Pool.reserveSlot` with the
+amount → `core.signAsPayer` → render the `AUTH` QR.
 
 *The line above said "device biometric" until 2026-09-12. A PWA cannot provide one offline, which is
 why `31-PARAMETERS.md` now specifies re-entry plus a hard cap instead (REV-14, T12).*

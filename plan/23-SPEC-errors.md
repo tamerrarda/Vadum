@@ -97,6 +97,7 @@ these is raised.
 | `LIMIT_QUEUE_EXPOSURE` | Merchant queue exposure cap reached |
 | `LIMIT_FAILED_SENDS` | Consecutive failed-send counter reached |
 | `LIMIT_SEND_WINDOW_EXPIRED` | Queued payment exceeded the product-level send window |
+| `LIMIT_PAYER_ALLOWANCE` | A payment would take what the payer's device signed offline in the last 24 hours past the spend limit, or its amount is not positive. The only `LIMIT_*` code on the payer's side. Reconnecting does not clear it, by design: that is what an earlier bound got wrong (T12, REV-17). **Raised by `client/pool.ts` `reserveSlot`** |
 | `LIMIT_PRECHECK_REQUIRED` | A T1 nonce-path acceptance without a passing `precheckNonce` verdict. T1 hands over before confirmation; without the pre-check it carries T2's fabricated-nonce exposure while feeling safer. **Raised by `client/queue.ts`** (D30) |
 
 ## Submission — `SUBMIT_*`

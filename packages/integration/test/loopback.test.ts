@@ -72,7 +72,7 @@ describe('G3 · loopback', () => {
     const decodedIntent = decodeIntent(scannedIntent.bytes, { mintCache });
     expect(decodedIntent).toEqual(intent);
 
-    const slot = await pool.reserveSlot(merchant, Date.now());
+    const slot = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     // The fail-safe order (D32): the slot is persisted as spent before a signature exists.
     expect(pool.status().slots[slot.index]).toMatchObject({ state: 'spent' });
 
@@ -96,7 +96,7 @@ describe('G3 · loopback', () => {
   it('settles what it verified, and re-arms the slot from the 100-byte return (D28)', { timeout: 120_000 }, async () => {
     const { chain, payerKey, merchantKey, merchant, pool, queue } = await twoDevices();
     const intent = intentFor(merchant, AMOUNT);
-    const slot = await pool.reserveSlot(merchant, Date.now());
+    const slot = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     const spentAgainstValue = slot.value;
     const auth = await signAsPayer({ intent, payer: await getAddressFromPublicKey(payerKey.publicKey), nonceRef: slot, amount: AMOUNT }, payerKey);
     const payment = await verifyAuth(intent, auth);
@@ -126,7 +126,7 @@ describe('G3 · loopback', () => {
     expect(status.slots[slot.index]).toMatchObject({ state: 'unspent', value: outcome.newNonceValue });
 
     // ── and the payer can pay again on the re-armed slot without ever reconnecting ──────────────
-    const again = await pool.reserveSlot(merchant, Date.now());
+    const again = await pool.reserveSlot(merchant, Date.now(), AMOUNT);
     expect(again).toEqual({ index: slot.index, value: outcome.newNonceValue });
     const secondPayment = await verifyAuth(intent, await signAsPayer({ intent, payer: payment.input.payer, nonceRef: again, amount: AMOUNT }, payerKey));
     await queue.accept(secondPayment, 'T2', AMOUNT);
