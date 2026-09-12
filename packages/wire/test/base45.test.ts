@@ -16,6 +16,30 @@ describe('BASE45_ALPHABET', () => {
   });
 });
 
+// Every other string in this suite came out of either this implementation or the fixture generator, so
+// an error the two shared would have gone unseen. These are the specification's own vectors: §4.4's
+// four encodings and §6's invalid one. `%69 VD92EX0` also happens to be the RFC's own evidence that a
+// space is data in this alphabet, which is the premise of D29 and of receive rule 10.
+describe('RFC 9285 published vectors', () => {
+  const ascii = (text: string): Uint8Array => new TextEncoder().encode(text);
+
+  it.each([
+    ['AB', 'BB8'],
+    ['Hello!!', '%69 VD92EX0'],
+    ['base-45', 'UJCLQE7W581'],
+    ['ietf!', 'QED8WEX0'],
+  ])('encodes %s as the published %s, and decodes it back', (text, encoded) => {
+    expect(toBase45(ascii(text))).toBe(encoded);
+    expect(fromBase45(encoded)).toEqual(ascii(text));
+  });
+
+  it('rejects GGW, the §6 example that overflows two bytes', async () => {
+    // 16 + 16×45 + 32×2025 = 65536, one past the largest value two bytes can hold. base45@2.0.1
+    // returned bytes for this (D12).
+    await expectVadumError(() => fromBase45('GGW'), 'WIRE_BASE45_INVALID', { value: 65_536 });
+  });
+});
+
 describe('committed strings', () => {
   const payloads = fixtures.cases.flatMap((fixture) => [
     [`${fixture.name} intent`, fixture.expected.wireIntent, fixture.expected.wireIntentBase45] as const,

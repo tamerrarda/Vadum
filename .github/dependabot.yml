@@ -1,0 +1,40 @@
+# Advisories in the locked tree are caught by `pnpm audit` in CI; this is the other half — the updates
+# themselves, so the lockfile does not drift a year behind while the grant is being reviewed.
+#
+# Two deliberate choices:
+#   - Updates are grouped and monthly. Twenty single-package pull requests a month would bury the
+#     ones that are actual work, and every update here has to pass `pnpm verify` anyway.
+#   - `@solana/*` and `@solana-program/*` are grouped together and never auto-mixed with the rest:
+#     D1 requires exactly one version of each `@solana/*` package across the workspace, and these
+#     packages move in lockstep. `pnpm check:solana-versions` fails a pull request that splits them.
+#
+# Most versions in this workspace live in `pnpm-workspace.yaml` under `catalog:` rather than in a
+# package.json. If Dependabot cannot rewrite a catalog entry it will say so on the pull request; the
+# update then has to be made by hand, which is the same amount of work as reading the release notes.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      solana:
+        patterns:
+          - '@solana/*'
+          - '@solana-program/*'
+      everything-else:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@solana/*'
+          - '@solana-program/*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - '*'
