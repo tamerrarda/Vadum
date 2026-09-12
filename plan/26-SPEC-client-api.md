@@ -26,7 +26,35 @@ export interface VadumRpc {
   getNonceAccount(address: Address): Promise<NonceAccountState>;
   getTokenBalance(ata: Address): Promise<bigint | null>;
   isAtaFrozen(ata: Address): Promise<boolean | null>;
+  /** The payer's lamports, which `Pool.create` and `Pool.close` check against D38 before sending. */
+  getBalance(address: Address): Promise<bigint>;
+
+  // The send surface. Added 2026-09-12 (B-1): this interface was read-only, but `Pool.create`,
+  // `Pool.close` and `submit` have to send a transaction and the spec gave them no other seam. The
+  // alternative — passing a kit client around — puts transaction plumbing in the apps.
+
+  /**
+   * Signs a blockhash-lifetime setup transaction with `feePayerKey` and confirms it. Any other
+   * required signature comes from a signer embedded in an instruction, which is how kit collects
+   * them — pool setup deliberately needs exactly one (D26).
+   */
+  sendSetup(instructions: readonly Instruction[], feePayerKey: CryptoKeyPair): Promise<string>;
+  /**
+   * Sends an already-signed payment and confirms it with the confirmer that matches its lifetime:
+   * the durable-nonce factory on the nonce path, never the blockhash one (SOL-15). Because the
+   * caller passes the lifetime, no call site can get that choice wrong.
+   */
+  sendPayment(wireTransaction: Uint8Array, lifetime: PaymentLifetime): Promise<string>;
 }
+
+/**
+ * What kit's confirmers need and wire bytes cannot carry: a decoded transaction is a message plus
+ * signatures, with no lifetime object attached. The caller built the message, so it passes the
+ * lifetime in rather than having the RPC layer re-derive it from the instructions.
+ */
+export type PaymentLifetime =
+  | { readonly kind: 'nonce'; readonly nonce: Nonce; readonly nonceAccountAddress: Address; readonly nonceAuthorityAddress: Address }
+  | { readonly kind: 'fresh'; readonly blockhash: Blockhash; readonly lastValidBlockHeight: bigint };
 
 export function createRpc(endpoint: string): VadumRpc;
 ```
@@ -284,8 +312,24 @@ export function createQueue(
 
 ```ts
 export type SubmitOutcome =
-  | { readonly kind: 'settled'; readonly signature: string; readonly newNonceValue: Nonce }
-  | { readonly kind: 'failed'; readonly code: VadumErrorCode; readonly feeCharged: boolean };
+  | {
+      readonly kind: 'settled';
+      readonly signature: string;
+      /**
+       * The value the merchant signs into a NONCE_RETURN (D28). **Nullable since 2026-09-12 (B-2):**
+       * a fresh-blockhash payment has no nonce account at all, and a slot that cannot be read back
+       * right after settlement leaves it null rather than guessing — a return carrying the value the
+       * slot was spent against is refused by the payer anyway.
+       */
+      readonly newNonceValue: Nonce | null;
+    }
+  | {
+      readonly kind: 'failed';
+      readonly code: VadumErrorCode;
+      readonly feeCharged: boolean;
+      /** What the RPC or the chain actually said, for the merchant's log and for support (PROD-7). */
+      readonly detail?: string;
+    };
 
 /**
  * Attaches the fee-payer signature and submits.
